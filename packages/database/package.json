@@ -1,0 +1,33 @@
+{
+  "name": "@repo/database",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/client.ts",
+    "./enums": "./src/enums.ts"
+  },
+  "scripts": {
+    "build": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "tsx src/seed.ts",
+    "dev": "tsc --noEmit --watch",
+    "format": "prisma format",
+    "generate": "prisma generate",
+    "lint": "eslint . --max-warnings 0",
+    "prebuild": "pnpm run generate",
+    "predev": "pnpm run generate",
+    "studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^7.2.0",
+    "@prisma/adapter-pg": "^7.9.0",
+    "dotenv": "^17.4.2"
+  },
+  "devDependencies": {
+    "prisma": "^7.2.0",
+    "typescript": "^5.9.3",
+    "tsx": "^4.19.2"
+  }
+}
