@@ -20,7 +20,7 @@ RUN pnpm --filter @repo/database generate
 
 COPY apps/api ./apps/api
 
-RUN pnpm --filter api --prod --legacy deploy /app/deploy
+RUN pnpm --filter api deploy /app/deploy --prod
 
 
 FROM node:22-alpine AS runner
