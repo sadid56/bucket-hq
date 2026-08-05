@@ -68,9 +68,49 @@ export class UserService {
   }
 
   static async updateGlobalRole(userId: string, role: "ADMIN" | "MEMBER") {
-    return await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { role },
     });
+
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE auth.users SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('role', $1) WHERE id = $2`,
+        role,
+        userId
+      );
+    } catch (err) {
+      console.error("Failed to sync role to Supabase metadata during update:", err);
+    }
+
+    return updatedUser;
+  }
+
+  static async updateProfile(userId: string, data: { name?: string; image?: string }) {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: data.name,
+        image: data.image,
+      },
+    });
+
+    try {
+      const updates: Record<string, string> = {};
+      if (data.name) updates.full_name = data.name;
+      if (data.image) updates.avatar_url = data.image;
+
+      if (Object.keys(updates).length > 0) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE auth.users SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || $1::jsonb WHERE id = $2`,
+          JSON.stringify(updates),
+          userId
+        );
+      }
+    } catch (err) {
+      console.error("Failed to sync updated profile to Supabase auth:", err);
+    }
+
+    return updatedUser;
   }
 }

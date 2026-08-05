@@ -5,8 +5,9 @@ import { ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { NuqsAdapter } from "nuqs/adapters/next";
+import { ENV } from "@/config/env";
 
-if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+if (typeof window !== "undefined" && ENV.NODE_ENV === "development") {
   const orig = console.error;
   console.error = (...args: any[]) => {
     if (typeof args[0] === "string" && args[0].includes("Encountered a script tag")) {
@@ -42,14 +43,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={defaultSystem}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ChakraProvider value={defaultSystem}>
           <NuqsAdapter>
             {children}
             <Toaster />
           </NuqsAdapter>
-        </ThemeProvider>
-      </ChakraProvider>
+        </ChakraProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

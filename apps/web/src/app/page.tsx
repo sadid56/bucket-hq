@@ -52,10 +52,10 @@ export default function Home() {
           </Heading>
         </Flex>
         <Flex gap={3}>
-          <Button size="sm" variant="ghost" onClick={() => router.push("/login")}>
+          <Button size="sm" variant="ghost" onClick={() => router.push("/auth/login")}>
             Sign In
           </Button>
-          <Button size="sm" colorPalette="teal" onClick={() => router.push("/signup")}>
+          <Button size="sm" colorPalette="teal" onClick={() => router.push("/auth/signup")}>
             Get Started
           </Button>
         </Flex>
@@ -77,10 +77,10 @@ export default function Home() {
             Connect your own cloud providers once. Broker file access securely via short-lived pre-signed URLs. BucketHQ never relays your binary data, keeping file transfers lightning fast.
           </Text>
           <Stack direction={{ base: "column", sm: "row" }} gap={4} mt={2} width={{ base: "100%", sm: "auto" }}>
-            <Button size="lg" colorPalette="teal" px={8} onClick={() => router.push("/signup")}>
+            <Button size="lg" colorPalette="teal" px={8} onClick={() => router.push("/auth/signup")}>
               Create Free Account
             </Button>
-            <Button size="lg" variant="outline" px={8} onClick={() => router.push("/login")}>
+            <Button size="lg" variant="outline" px={8} onClick={() => router.push("/auth/login")}>
               Console Login
             </Button>
           </Stack>

@@ -65,4 +65,17 @@ export class UserController {
       data: updatedUser,
     });
   });
+
+  static updateProfile = catchAsync(async (req: AuthenticatedRequest, res: Response) => {
+    const { name, image } = req.body;
+
+    const updatedUser = await UserService.updateProfile(req.user.id, { name, image });
+
+    sendResponse(res, {
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Profile updated successfully",
+      data: updatedUser,
+    });
+  });
 }

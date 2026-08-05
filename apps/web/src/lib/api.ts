@@ -1,7 +1,8 @@
 import axios from "axios";
 import { supabase } from "./supabase";
+import { ENV } from "@/config/env";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_BASE_URL = ENV.API_URL;
 
 export const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -16,8 +17,6 @@ axiosInstance.interceptors.request.use(async (config) => {
     const parts = window.location.pathname.split("/");
     if (parts[1] === "dashboard" && parts[2]) {
       orgId = parts[2];
-    } else {
-      orgId = localStorage.getItem("active_organization_id") || "";
     }
   }
 

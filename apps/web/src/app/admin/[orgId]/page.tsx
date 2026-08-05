@@ -1,0 +1,6 @@
+import React from "react";
+import { AdminOverview } from "@/features/admin/AdminOverview";
+
+export default function AdminPage() {
+  return <AdminOverview />;
+}

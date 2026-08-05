@@ -50,3 +50,12 @@ export function useDeleteUser() {
     errorMessage: "Failed to delete user",
   });
 }
+
+export function useUpdateProfile() {
+  return useAppMutation<{ name?: string; image?: string }>({
+    mutationFn: UserEndpoints.updateMe,
+    invalidateKeys: [["users", "me"]],
+    successMessage: "Profile updated successfully",
+    errorMessage: "Failed to update profile",
+  });
+}

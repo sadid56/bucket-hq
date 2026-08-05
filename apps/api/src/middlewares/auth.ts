@@ -51,6 +51,15 @@ export const authenticateUser = catchAsync(async (req: AuthenticatedRequest, res
         },
         include: { teamAccesses: true },
       });
+
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE auth.users SET raw_user_meta_data = COALESCE(raw_user_meta_data, '{}'::jsonb) || jsonb_build_object('role', 'MEMBER') WHERE id = $1`,
+          supabaseUser.id
+        );
+      } catch (err) {
+        console.error("Failed to sync role to Supabase metadata during creation:", err);
+      }
     }
 
     if (user.banned) {

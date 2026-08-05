@@ -13,6 +13,12 @@ export const UserEndpoints = {
 
   getMe: () => api<any>("/users/me"),
 
+  updateMe: (data: { name?: string; image?: string }) =>
+    api<any>("/users/me", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   toggleBanUser: ({ userId, banned, reason }: { userId: string; banned: boolean; reason?: string }) =>
     api<any>(`/users/${userId}/ban`, {
       method: "PATCH",

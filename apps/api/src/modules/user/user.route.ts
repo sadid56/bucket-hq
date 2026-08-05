@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticateUser);
 
 router.get("/me", UserController.getMe);
+router.patch("/me", UserController.updateProfile);
 
 router.use(requireAdmin);
 router.get("/", UserController.getUsers);

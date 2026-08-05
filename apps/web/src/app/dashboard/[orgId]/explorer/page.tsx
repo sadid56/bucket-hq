@@ -1,12 +1,5 @@
-"use client";
-
-import React, { Suspense } from "react";
-import { FileExplorer } from "@/features/explorer/components/FileExplorer";
+import { FileExplorer } from "@/features/explorer/FileExplorer";
 
 export default function ExplorerPage() {
-  return (
-    <Suspense fallback={null}>
-      <FileExplorer />
-    </Suspense>
-  );
+  return <FileExplorer />;
 }
