@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Box, Flex, Button, Stack, Heading, Drawer } from "@chakra-ui/react";
 import { useGetMe } from "@/react-query/users/actions";
@@ -15,6 +15,7 @@ interface DashboardLayoutClientProps {
 }
 
 export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -46,7 +47,7 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
       const defaultName = user.name ? `${user.name}'s Workspace` : "My Workspace";
       createOrg.mutate(defaultName, {
         onSuccess: (newOrg) => {
-          window.location.href = `/dashboard/${newOrg.id}`;
+          router.push(`/dashboard/${newOrg.id}`);
         },
         onError: () => {
           hasCreatedRef.current = false;
@@ -66,7 +67,7 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
 
       // If we are on "/dashboard" or "/admin" exactly:
       if (pathParts.length === 1 && (pathParts[0] === "dashboard" || pathParts[0] === "admin")) {
-        window.location.href = `/${pathParts[0]}/${activeId}`;
+        router.replace(`/${pathParts[0]}/${activeId}`);
         return;
       }
 
@@ -75,7 +76,7 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
         const hasOldOrgId = orgList.some((o) => o.id === orgIdParam);
         const subpath = hasOldOrgId ? pathParts.slice(2).join("/") : pathParts.slice(1).join("/");
         const targetPath = subpath ? `/${pathParts[0]}/${activeId}/${subpath}` : `/${pathParts[0]}/${activeId}`;
-        window.location.href = targetPath;
+        router.replace(targetPath);
       }
     }
   }, [orgList, orgIdParam, pathname]);
@@ -91,7 +92,7 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
     }
 
     const newPath = subpath ? `/dashboard/${id}/${subpath}` : `/dashboard/${id}`;
-    window.location.href = newPath;
+    router.push(newPath);
   };
 
   const toggleTheme = () => {

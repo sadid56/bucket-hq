@@ -73,7 +73,7 @@ export function LoginForm() {
                   <Text fontSize='sm' fontWeight='medium'>
                     Password
                   </Text>
-                  <Button variant='plain' size='xs' colorPalette='teal' type='button' onClick={() => router.push("/reset-password")}>
+                  <Button variant='plain' size='xs' colorPalette='teal' type='button' onClick={() => router.push("/auth/reset-password")}>
                     Forgot password?
                   </Button>
                 </Flex>
@@ -90,7 +90,7 @@ export function LoginForm() {
           </Stack>
         </form>
 
-        <SocialLogin mode="login" />
+        <SocialLogin mode='login' />
 
         <Text fontSize='xs' color='fg.muted' textAlign='center'>
           Don't have an account?{" "}

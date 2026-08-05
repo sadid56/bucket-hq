@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Box, Flex, Text, Button, Stack, Heading, Center, createListCollection } from "@chakra-ui/react";
@@ -67,10 +68,10 @@ export function DashboardSidebar({
     try {
       const res = await createOrgAction(name);
       if (res.success && res.org?.id) {
-        window.location.href = `/dashboard/${res.org.id}`;
+        router.push(`/dashboard/${res.org.id}`);
       } else {
         console.error(res.error || "Failed to create workspace");
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
       }
     } catch (e) {
       console.error(e);
@@ -153,23 +154,23 @@ export function DashboardSidebar({
             {navLinks.map((link) => {
               const subPath = link.path.replace("/dashboard", "");
               const isActive = subPath ? pathname.endsWith(subPath) : pathname === `/dashboard/${activeOrgId}`;
+              const targetPath = subPath ? `/dashboard/${activeOrgId}${subPath}` : `/dashboard/${activeOrgId}`;
               return (
                 <Button
                   key={link.path}
+                  asChild
                   variant={isActive ? "subtle" : "ghost"}
                   colorPalette={isActive ? "teal" : "gray"}
                   justifyContent='flex-start'
-                  onClick={() => {
-                    const targetPath = subPath ? `/dashboard/${activeOrgId}${subPath}` : `/dashboard/${activeOrgId}`;
-                    router.push(targetPath);
-                  }}
                   size='sm'
                   width='100%'
                 >
-                  <Flex align='center' gap={3}>
-                    {link.icon}
-                    <Text fontWeight={isActive ? "semibold" : "medium"}>{link.label}</Text>
-                  </Flex>
+                  <Link href={targetPath}>
+                    <Flex align='center' gap={3}>
+                      {link.icon}
+                      <Text fontWeight={isActive ? "semibold" : "medium"}>{link.label}</Text>
+                    </Flex>
+                  </Link>
                 </Button>
               );
             })}
@@ -185,23 +186,23 @@ export function DashboardSidebar({
             {adminLinks.map((link) => {
               const subPath = link.path.replace("/admin", "");
               const isActive = subPath ? pathname.endsWith(subPath) : (pathname === `/admin/${activeOrgId}`);
+              const targetPath = subPath ? `/admin/${activeOrgId}${subPath}` : `/admin/${activeOrgId}`;
               return (
                 <Button
                   key={link.path}
+                  asChild
                   variant={isActive ? "subtle" : "ghost"}
                   colorPalette={isActive ? "purple" : "gray"}
                   justifyContent='flex-start'
-                  onClick={() => {
-                    const targetPath = subPath ? `/admin/${activeOrgId}${subPath}` : `/admin/${activeOrgId}`;
-                    router.push(targetPath);
-                  }}
                   size='sm'
                   width='100%'
                 >
-                  <Flex align='center' gap={3}>
-                    {link.icon}
-                    <Text fontWeight={isActive ? "semibold" : "medium"}>{link.label}</Text>
-                  </Flex>
+                  <Link href={targetPath}>
+                    <Flex align='center' gap={3}>
+                      {link.icon}
+                      <Text fontWeight={isActive ? "semibold" : "medium"}>{link.label}</Text>
+                    </Flex>
+                  </Link>
                 </Button>
               );
             })}

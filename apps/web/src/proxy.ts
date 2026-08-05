@@ -1,6 +1,5 @@
 import { createMiddlewareClient } from "@/lib/supabaseServer";
 import { NextResponse, type NextRequest } from "next/server";
-import { ENV } from "@/config/env";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({

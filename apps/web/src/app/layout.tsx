@@ -9,8 +9,16 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Bucket HQ",
-  description: "Bucket HQ",
+  title: {
+    default: "BucketHQ — Unified Cloud Storage Management",
+    template: "%s | BucketHQ",
+  },
+  description:
+    "Manage your AWS S3, Cloudflare R2, and Cloudinary buckets in one workspace. Secure pre-signed URLs, team collaboration, and AES-256 encryption.",
+  keywords: ["cloud storage", "S3", "R2", "Cloudinary", "file management", "pre-signed URLs", "bucket management"],
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

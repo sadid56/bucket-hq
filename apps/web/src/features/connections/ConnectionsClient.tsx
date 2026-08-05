@@ -10,16 +10,12 @@ import { connectionsKeys } from "@/react-query/connections/keys";
 import { Plus, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 
-interface ConnectionsClientProps {
-  initialConnections: any[];
-  orgId: string;
-}
 
-export function ConnectionsClient({ initialConnections, orgId }: ConnectionsClientProps) {
+
+export function ConnectionsClient() {
   const { data: connections = [], isLoading } = useQuery({
     queryKey: connectionsKeys.lists(),
     queryFn: ConnectionEndpoints.getConnections,
-    initialData: initialConnections,
   });
 
   const [modal, setModal] = useQueryState("modal");

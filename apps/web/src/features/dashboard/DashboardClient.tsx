@@ -1,20 +1,33 @@
 "use client";
 
 import React from "react";
-import { Box, Flex, Text, Heading, Stack, Button, SimpleGrid } from "@chakra-ui/react";
+import Link from "next/link";
+import { Box, Flex, Text, Heading, Stack, Button, SimpleGrid, Skeleton } from "@chakra-ui/react";
 import { StatCard } from "@/components/shared/StatCard";
-import { useRouter } from "next/navigation";
+import { useOrgs } from "@/react-query/organizations/actions";
 import { Database, HardDrive, Cloud, Image, Folder, Key, Users } from "lucide-react";
 
 interface DashboardClientProps {
-  orgs: any[];
   orgId: string;
 }
 
-export function DashboardClient({ orgs, orgId }: DashboardClientProps) {
-  const router = useRouter();
+export function DashboardClient({ orgId }: DashboardClientProps) {
+  const { data: orgs, isLoading } = useOrgs();
 
   const activeOrg = orgs?.find((o: any) => o.id === orgId) || orgs?.[0] || null;
+
+  if (isLoading) {
+    return (
+      <Stack gap={6}>
+        <Skeleton height="32px" width="250px" />
+        <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap={5}>
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} height="90px" borderRadius="lg" />
+          ))}
+        </SimpleGrid>
+      </Stack>
+    );
+  }
 
   if (!activeOrg) {
     return (
@@ -118,12 +131,14 @@ export function DashboardClient({ orgs, orgId }: DashboardClientProps) {
                   {shortcut.description}
                 </Text>
                 <Button
+                  asChild
                   size="sm"
                   colorPalette="teal"
                   variant="surface"
-                  onClick={() => router.push(shortcut.href)}
                 >
-                  {shortcut.buttonText}
+                  <Link href={shortcut.href}>
+                    {shortcut.buttonText}
+                  </Link>
                 </Button>
               </Box>
             ))}
