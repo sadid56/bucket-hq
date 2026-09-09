@@ -7,34 +7,23 @@ RUN corepack enable pnpm
 
 WORKDIR /app
 
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY packages/database/package.json ./packages/database/
-COPY apps/api/package.json ./apps/api/
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
 
-RUN pnpm install --frozen-lockfile --filter api...
+COPY . .
 
-COPY packages/database ./packages/database
-
-# Generate Prisma Client
-RUN pnpm --filter @repo/database generate
-
-COPY apps/api ./apps/api
-
-RUN pnpm --filter api deploy /app/deploy --prod
-
+# Generate Prisma Client & Build Next.js
+RUN pnpm prisma generate
+RUN pnpm build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-COPY --from=base /app/deploy ./
-
-COPY --from=base /app/packages/database/generated ./node_modules/@repo/database/generated
-
-# Expose API port
-EXPOSE 4000
-
-ENV PORT=4000
 ENV NODE_ENV=production
+ENV PORT=3000
 
-# Run using tsx
-CMD ["npx", "tsx", "src/server.ts"]
+COPY --from=base /app ./
+
+EXPOSE 3000
+
+CMD ["pnpm", "start"]
