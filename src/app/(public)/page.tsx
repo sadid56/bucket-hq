@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Box, Flex, Text, Button, Heading, Stack, SimpleGrid, Badge, Center } from "@chakra-ui/react";
@@ -49,27 +48,6 @@ const features = [
   },
 ];
 
-const steps = [
-  {
-    number: "01",
-    icon: <CloudCog size={28} />,
-    title: "Connect Providers",
-    description: "Add your S3, R2, or Cloudinary credentials. They're encrypted instantly with AES-256-GCM.",
-  },
-  {
-    number: "02",
-    icon: <Link2 size={28} />,
-    title: "Browse & Manage",
-    description: "Use the visual file explorer to navigate folders, upload files, and generate pre-signed URLs.",
-  },
-  {
-    number: "03",
-    icon: <Share2 size={28} />,
-    title: "Share Securely",
-    description: "Distribute time-limited links to clients or teammates. Full audit trail included.",
-  },
-];
-
 export default function Home() {
   return (
     <>
@@ -80,8 +58,8 @@ export default function Home() {
           position='absolute'
           top='-100px'
           left='-100px'
-          width={{ base: '300px', md: '800px' }}
-          height={{ base: '300px', md: '800px' }}
+          width={{ base: "300px", md: "800px" }}
+          height={{ base: "300px", md: "800px" }}
           borderRadius='full'
           background='radial-gradient(circle, rgba(20, 184, 166, 0.12) 0%, rgba(99, 102, 241, 0.04) 50%, transparent 80%)'
           filter='blur(100px)'
@@ -105,13 +83,7 @@ export default function Home() {
           <Stack gap={6} maxW='3xl' align='center'>
             <Heading as='h1' size={{ base: "3xl", md: "6xl" }} fontWeight='black' lineHeight='tight' letterSpacing='tight'>
               Manage your buckets in{" "}
-              <Text
-                as='span'
-                bgGradient='to-r'
-                gradientFrom='teal.400'
-                gradientTo='cyan.300'
-                bgClip='text'
-              >
+              <Text as='span' bgGradient='to-r' gradientFrom='teal.400' gradientTo='cyan.300' bgClip='text'>
                 one workspace
               </Text>
             </Heading>

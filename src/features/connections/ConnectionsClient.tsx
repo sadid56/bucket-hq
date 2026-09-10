@@ -9,10 +9,15 @@ import { useConnections } from "@/react-query/connections/actions";
 import { Plus, X } from "lucide-react";
 import { useQueryState } from "nuqs";
 
-export function ConnectionsClient() {
+interface ConnectionsClientProps {
+  initialConnections?: any[];
+  orgId?: string;
+}
+
+export function ConnectionsClient({ initialConnections = [], orgId: propOrgId }: ConnectionsClientProps = {}) {
   const params = useParams();
-  const orgId = params?.orgId as string | undefined;
-  const { data: connections = [], isLoading } = useConnections(orgId);
+  const orgId = propOrgId || (params?.orgId as string | undefined);
+  const { data: connections = initialConnections, isLoading } = useConnections(orgId, initialConnections);
 
   const [modal, setModal] = useQueryState("modal");
 

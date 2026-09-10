@@ -3,10 +3,13 @@ import { useAppMutation } from "@/hooks/useAppMutation";
 import { ConnectionEndpoints } from "./api";
 import { connectionsKeys } from "./keys";
 
-export function useConnections(orgId?: string) {
+export function useConnections(orgId?: string, initialData?: any) {
   return useQuery({
     queryKey: connectionsKeys.lists(orgId),
     queryFn: () => ConnectionEndpoints.getConnections(orgId ? { orgId } : undefined),
+    initialData,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

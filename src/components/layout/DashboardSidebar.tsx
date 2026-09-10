@@ -47,8 +47,8 @@ export function DashboardSidebar({
   const mounted = useMounted();
   const [isCreateOrgOpen, setIsCreateOrgOpen] = useState(false);
 
-  const { data: user } = useGetMe();
-  const { data: orgList } = useOrgs();
+  const { data: user } = useGetMe(initialUser);
+  const { data: orgList } = useOrgs(initialOrgs && initialOrgs.length > 0 ? initialOrgs : undefined);
   const [isPending, setIsPending] = useState(false);
 
   const effectiveUser = user || initialUser;
@@ -56,7 +56,7 @@ export function DashboardSidebar({
   const isAdmin = effectiveUser?.role === "ADMIN";
 
   const orgCollection = React.useMemo(() => {
-    return createListCollection({
+    return createListCollection<{ label: string; value: string }>({
       items: effectiveOrgs.map((org: any) => ({ label: org.name, value: org.slug || org.id })),
     });
   }, [effectiveOrgs]);
@@ -83,11 +83,9 @@ export function DashboardSidebar({
         const target = res.org.slug || res.org.id;
         window.location.href = `/dashboard/${target}`;
       } else {
-        console.error(res.error || "Failed to create workspace");
         window.location.href = "/dashboard";
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
     } finally {
       setIsPending(false);
       setIsCreateOrgOpen(false);
@@ -135,8 +133,8 @@ export function DashboardSidebar({
               <SelectTrigger>
                 <SelectValueText placeholder='Select workspace' />
               </SelectTrigger>
-              <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600, maxWidth: "220px" }}>
-                {orgCollection.items.map((org) => (
+              <SelectContent style={{ maxWidth: "220px" }}>
+                {orgCollection.items.map((org: any) => (
                   <SelectItem item={org} key={org.value}>
                     <Text
                       truncate
@@ -186,7 +184,7 @@ export function DashboardSidebar({
                   size='sm'
                   width='100%'
                 >
-                  <Link href={targetPath}>
+                  <Link href={targetPath} prefetch={true}>
                     <Flex align='center' gap={3} width='100%' overflow='hidden'>
                       {link.icon}
                       <Text fontWeight={isActive ? "semibold" : "medium"} truncate>
@@ -222,7 +220,7 @@ export function DashboardSidebar({
                   size='sm'
                   width='100%'
                 >
-                  <Link href={targetPath}>
+                  <Link href={targetPath} prefetch={true}>
                     <Flex align='center' gap={3} width='100%' overflow='hidden'>
                       {link.icon}
                       <Text fontWeight={isActive ? "semibold" : "medium"} truncate>{link.label}</Text>

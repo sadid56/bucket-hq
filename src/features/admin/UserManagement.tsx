@@ -121,7 +121,7 @@ export function UserManagement() {
                   <SelectTrigger>
                     <SelectValueText placeholder='Select role' />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
+                  <SelectContent>
                     {globalRoleCollection.items.map((role) => (
                       <SelectItem item={role} key={role.value}>
                         {role.label}

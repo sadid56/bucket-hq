@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Stack, Text, Heading, Flex } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
 import { loginAction } from "@/actions/auth";
@@ -11,6 +11,8 @@ import { SocialLogin } from "./SocialLogin";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite") || undefined;
   const [loading, setLoading] = useState(false);
   const {
     register,
@@ -26,17 +28,18 @@ export function LoginForm() {
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
-      const res = await loginAction(data);
+      const res = await loginAction({ ...data, inviteToken });
       if (res?.error) {
         throw new Error(res.error);
       }
 
       toaster.create({
-        title: "Logged in successfully",
+        title: inviteToken ? "Welcome to the team!" : "Logged in successfully",
         type: "success",
       });
 
-      router.push("/dashboard");
+      const redirectPath = res.redirectUrl || "/dashboard";
+      window.location.href = redirectPath;
     } catch (err: any) {
       toaster.create({
         title: err.message || "Failed to log in",
@@ -54,7 +57,9 @@ export function LoginForm() {
           BucketHQ
         </Heading>
         <Text fontSize='sm' color='fg.muted' textAlign='center'>
-          Log in to manage your unified cloud storage
+          {inviteToken
+            ? "Sign in to accept your team invitation"
+            : "Log in to manage your unified cloud storage"}
         </Text>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -85,7 +90,7 @@ export function LoginForm() {
             />
 
             <Button type='submit' colorPalette='teal' loading={loading} width='100%' mt={2}>
-              Sign In
+              {inviteToken ? "Sign In & Join" : "Sign In"}
             </Button>
           </Stack>
         </form>
@@ -93,8 +98,15 @@ export function LoginForm() {
         <SocialLogin mode='login' />
 
         <Text fontSize='xs' color='fg.muted' textAlign='center'>
-          Don't have an account?{" "}
-          <Button variant='plain' size='xs' colorPalette='teal' onClick={() => router.push("/auth/signup")}>
+          Don&apos;t have an account?{" "}
+          <Button
+            variant='plain'
+            size='xs'
+            colorPalette='teal'
+            onClick={() =>
+              router.push(inviteToken ? `/auth/signup?invite=${inviteToken}` : "/auth/signup")
+            }
+          >
             Create account
           </Button>
         </Text>

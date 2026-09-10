@@ -9,6 +9,7 @@ import { SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectValueText }
 import { TextField } from "@/components/ui/text-field";
 import { PathRestrictionModal } from "./PathRestrictionModal";
 import { useMembers } from "@/react-query/team/actions";
+import { useGetMe } from "@/react-query/users/actions";
 import { inviteMemberAction, updateMemberRoleAction, removeMemberAction } from "@/actions/team";
 
 interface Member {
@@ -21,9 +22,19 @@ interface Member {
   joinedAt: string | Date;
 }
 
-export function MemberList() {
+interface MemberListProps {
+  initialMembers?: Member[];
+  orgId?: string;
+  currentUserId?: string;
+}
+
+export function MemberList({ initialMembers, orgId: propOrgId, currentUserId }: MemberListProps = {}) {
   const params = useParams();
-  const orgId = params?.orgId as string;
+  const orgId = propOrgId || (params?.orgId as string);
+
+  const { data: currentUser } = useGetMe();
+  const activeUserId = currentUserId || currentUser?.id;
+  const activeUserEmail = currentUser?.email;
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"OWNER" | "EDITOR" | "VIEWER">("VIEWER");
@@ -43,7 +54,7 @@ export function MemberList() {
     });
   }, []);
 
-  const { data: members = [], isLoading: loading, refetch } = useMembers(orgId);
+  const { data: members = initialMembers || [], isLoading: loading, refetch } = useMembers(orgId, initialMembers);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,11 +69,8 @@ export function MemberList() {
       if (res.success) {
         setInviteEmail("");
         refetch();
-      } else {
-        console.error(res.error || "Failed to invite member");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
     } finally {
       setIsInviting(false);
     }
@@ -74,27 +82,21 @@ export function MemberList() {
       const res = await updateMemberRoleAction(orgId, userId, newRole);
       if (res.success) {
         refetch();
-      } else {
-        console.error(res.error || "Failed to update role");
       }
-    } catch (err) {
-      console.error(err);
-    }
+    } catch {}
   };
 
   const handleRemoveMember = async () => {
     if (!deleteMember || !orgId) return;
+    if (deleteMember.userId === activeUserId || (activeUserEmail && deleteMember.email === activeUserEmail)) return;
     setIsRemoving(true);
     try {
       const res = await removeMemberAction(orgId, deleteMember.userId);
       if (res.success) {
         setDeleteMember(null);
         refetch();
-      } else {
-        console.error(res.error || "Failed to remove member");
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
     } finally {
       setIsRemoving(false);
     }
@@ -138,7 +140,7 @@ export function MemberList() {
                   <SelectTrigger>
                     <SelectValueText placeholder='Select role' />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
+                  <SelectContent>
                     {roleCollection.items.map((role) => (
                       <SelectItem item={role} key={role.value}>
                         {role.label}
@@ -165,59 +167,72 @@ export function MemberList() {
           headers={["Name", "Email", "Org Role", "Banned", "Joined At", "Actions"]}
           data={members}
           isLoading={loading}
-          renderRow={(member: Member) => (
-            <tr key={member.userId} style={{ borderBottom: "1px solid var(--chakra-colors-border-subtle)" }}>
-              <td style={{ padding: "12px" }}>
-                <Text fontWeight='semibold' fontSize='sm'>
-                  {member.name}
-                </Text>
-              </td>
-              <td style={{ padding: "12px" }}>
-                <Text fontSize='sm' color='fg.muted'>
-                  {member.email}
-                </Text>
-              </td>
-              <td style={{ padding: "12px" }}>
-                <Box maxW='150px'>
-                  <SelectRoot
-                    collection={roleCollection}
-                    value={[member.role]}
-                    onValueChange={(details) => details.value[0] && handleUpdateRole(member.userId, details.value[0] as any)}
-                    size='sm'
-                  >
-                    <SelectTrigger>
-                      <SelectValueText placeholder='Select role' />
-                    </SelectTrigger>
-                    <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
-                      {roleCollection.items.map((role) => (
-                        <SelectItem item={role} key={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </SelectRoot>
-                </Box>
-              </td>
-              <td style={{ padding: "12px" }}>
-                {member.banned ? <Badge colorPalette='red'>Banned</Badge> : <Badge colorPalette='green'>Active</Badge>}
-              </td>
-              <td style={{ padding: "12px" }}>
-                <Text fontSize='xs' color='fg.muted'>
-                  {new Date(member.joinedAt).toLocaleDateString()}
-                </Text>
-              </td>
-              <td style={{ padding: "12px" }}>
-                <Flex gap={2}>
-                  <Button size='xs' variant='outline' colorPalette='teal' onClick={() => setActiveRestrictionUser(member)}>
-                    Access Rules
-                  </Button>
-                  <Button size='xs' variant='outline' colorPalette='red' onClick={() => setDeleteMember(member)}>
-                    Remove
-                  </Button>
-                </Flex>
-              </td>
-            </tr>
-          )}
+          renderRow={(member: Member) => {
+            const isCurrentUser = member.userId === activeUserId || (!!activeUserEmail && member.email === activeUserEmail);
+            return (
+              <tr key={member.userId} style={{ borderBottom: "1px solid var(--chakra-colors-border-subtle)" }}>
+                <td style={{ padding: "12px" }}>
+                  <Flex align='center' gap={2}>
+                    <Text fontWeight='semibold' fontSize='sm'>
+                      {member.name}
+                    </Text>
+                    {isCurrentUser && (
+                      <Badge size='xs' colorPalette='teal' variant='surface'>
+                        You
+                      </Badge>
+                    )}
+                  </Flex>
+                </td>
+                <td style={{ padding: "12px" }}>
+                  <Text fontSize='sm' color='fg.muted'>
+                    {member.email}
+                  </Text>
+                </td>
+                <td style={{ padding: "12px" }}>
+                  <Box maxW='150px'>
+                    <SelectRoot
+                      collection={roleCollection}
+                      value={[member.role]}
+                      onValueChange={(details) => details.value[0] && handleUpdateRole(member.userId, details.value[0] as any)}
+                      size='sm'
+                      disabled={isCurrentUser}
+                    >
+                      <SelectTrigger>
+                        <SelectValueText placeholder='Select role' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roleCollection.items.map((role) => (
+                          <SelectItem item={role} key={role.value}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </SelectRoot>
+                  </Box>
+                </td>
+                <td style={{ padding: "12px" }}>
+                  {member.banned ? <Badge colorPalette='red'>Banned</Badge> : <Badge colorPalette='green'>Active</Badge>}
+                </td>
+                <td style={{ padding: "12px" }}>
+                  <Text fontSize='xs' color='fg.muted'>
+                    {new Date(member.joinedAt).toLocaleDateString()}
+                  </Text>
+                </td>
+                <td style={{ padding: "12px" }}>
+                  <Flex gap={2}>
+                    <Button size='xs' variant='outline' colorPalette='teal' onClick={() => setActiveRestrictionUser(member)}>
+                      Access Rules
+                    </Button>
+                    {!isCurrentUser && (
+                      <Button size='xs' variant='outline' colorPalette='red' onClick={() => setDeleteMember(member)}>
+                        Remove
+                      </Button>
+                    )}
+                  </Flex>
+                </td>
+              </tr>
+            );
+          }}
         />
       </Stack>
 

@@ -126,9 +126,7 @@ export function FileThumbnail({
           setUrl(res.url);
           setCachedSignedUrl(connectionId, item.key, res.url);
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch {}
     };
     fetchUrl();
     return () => {

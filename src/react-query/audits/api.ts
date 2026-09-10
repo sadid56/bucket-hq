@@ -1,9 +1,11 @@
 import { client } from "@/lib/orpc";
 
 export const AuditEndpoints = {
-  getAudits: (filters: {
+  getAudits: (filters?: {
+    orgId?: string;
     action?: string;
     userId?: string;
+    storageConnectionId?: string;
     startDate?: string;
     endDate?: string;
   }) => client.audit.list(filters),

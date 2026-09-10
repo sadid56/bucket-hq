@@ -6,12 +6,16 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TextField } from "@/components/ui/text-field";
 import { updateOrgAction, deleteOrgAction } from "@/actions/organization";
 
+import { useOrgs } from "@/react-query/organizations/actions";
+
 interface SettingsClientProps {
-  orgs: any[];
+  orgs?: any[];
   orgId: string;
 }
 
-export function SettingsClient({ orgs, orgId }: SettingsClientProps) {
+export function SettingsClient({ orgs: initialOrgs = [], orgId }: SettingsClientProps) {
+  const { data: queriedOrgs } = useOrgs();
+  const orgs = queriedOrgs || initialOrgs;
   const [orgName, setOrgName] = useState("");
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,12 +39,8 @@ export function SettingsClient({ orgs, orgId }: SettingsClientProps) {
       if (res.success && res.org) {
         const newSlug = res.org.slug || res.org.id;
         window.location.href = `/dashboard/${newSlug}/settings`;
-      } else {
-        console.error(res.error || "Failed to update workspace name");
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
+    } catch {} finally {
       setIsSaving(false);
     }
   };
@@ -53,12 +53,8 @@ export function SettingsClient({ orgs, orgId }: SettingsClientProps) {
       const res = await deleteOrgAction(activeOrg.id);
       if (res.success) {
         window.location.href = "/dashboard";
-      } else {
-        console.error(res.error || "Failed to delete workspace");
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
+    } catch {} finally {
       setIsDeleting(false);
       setIsDeleteOpen(false);
     }

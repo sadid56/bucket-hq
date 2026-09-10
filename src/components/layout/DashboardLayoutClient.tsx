@@ -26,8 +26,8 @@ export function DashboardLayoutClient({ children, initialOrgs = [], initialUser 
   const params = useParams();
   const orgIdParam = params?.orgId as string | undefined;
 
-  const { data: user, isLoading: loadingUser } = useGetMe();
-  const { data: orgList, isLoading: loadingOrgs } = useOrgs();
+  const { data: user, isLoading: loadingUser } = useGetMe(initialUser);
+  const { data: orgList, isLoading: loadingOrgs } = useOrgs(initialOrgs && initialOrgs.length > 0 ? initialOrgs : undefined);
 
   const effectiveOrgs = orgList && orgList.length > 0 ? orgList : initialOrgs;
   const effectiveUser = user || initialUser;

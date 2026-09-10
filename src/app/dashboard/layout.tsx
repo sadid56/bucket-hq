@@ -1,6 +1,8 @@
 import React from "react";
 import { DashboardLayoutClient } from "@/components/layout/DashboardLayoutClient";
 import { createClient } from "@/lib/supabaseServer";
+import { cookies } from "next/headers";
+import { verifySupabaseJWT, extractSupabaseTokenFromCookies } from "@/lib/jwt";
 import { prisma } from "@/server/db";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -8,42 +10,60 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let user: any = null;
 
   try {
-    const supabase = await createClient();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    let authUserId: string | null = null;
 
-    if (authUser) {
-      user = await prisma.user.findUnique({
-        where: { id: authUser.id },
-      });
+    const cookieStore = await cookies();
+    const token = extractSupabaseTokenFromCookies(cookieStore.getAll());
+    if (token) {
+      const verified = await verifySupabaseJWT(token);
+      if (verified) {
+        authUserId = verified.id;
+      }
+    }
 
-      const teamAccesses = await prisma.teamAccess.findMany({
-        where: { userId: authUser.id },
-        include: {
-          organization: {
-            include: {
-              storageConnections: {
-                select: {
-                  id: true,
-                  label: true,
-                  providerType: true,
-                  bucketName: true,
+    if (!authUserId) {
+      const supabase = await createClient();
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser();
+      if (authUser) authUserId = authUser.id;
+    }
+
+    if (authUserId) {
+      const [userRecord, teamAccesses] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: authUserId },
+        }),
+        prisma.teamAccess.findMany({
+          where: { userId: authUserId },
+          include: {
+            organization: {
+              include: {
+                storageConnections: {
+                  select: {
+                    id: true,
+                    label: true,
+                    providerType: true,
+                    bucketName: true,
+                    projectName: true,
+                    environment: true,
+                  },
                 },
               },
             },
           },
-        },
-        orderBy: { createdAt: "desc" },
-      });
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
 
+      user = userRecord;
       initialOrgs = teamAccesses.map((ta) => ({
         ...ta.organization,
         userRole: ta.role,
       }));
     }
-  } catch (err) {
-    console.error("DashboardLayout SSR error:", err);
+  } catch {
+    // Graceful fallback for unauthenticated or loading state
   }
 
   return (

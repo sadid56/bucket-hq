@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Stack, Text, Heading, Flex } from "@chakra-ui/react";
 import { useForm } from "react-hook-form";
 import { signupAction } from "@/actions/auth";
@@ -11,6 +11,8 @@ import { SocialLogin } from "./SocialLogin";
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite") || undefined;
   const [loading, setLoading] = useState(false);
   const {
     register,
@@ -28,7 +30,7 @@ export function SignupForm() {
   const onSubmit = async (data: any) => {
     setLoading(true);
     try {
-      const res = await signupAction(data);
+      const res = await signupAction({ ...data, inviteToken });
 
       if (res?.error) {
         throw new Error(res.error);
@@ -43,7 +45,7 @@ export function SignupForm() {
         router.push("/auth/login");
       } else {
         toaster.create({
-          title: "Account created successfully",
+          title: inviteToken ? "Welcome to the team!" : "Account created successfully",
           type: "success",
         });
 
@@ -67,10 +69,12 @@ export function SignupForm() {
     <Box w='100%' maxW='md' p={8} bg='bg.panel' borderRadius='lg' borderWidth='1px' shadow='md'>
       <Stack gap={6}>
         <Heading size='xl' textAlign='center' color='teal.500' fontWeight='extrabold'>
-          Create Account
+          {inviteToken ? "Join Your Team" : "Create Account"}
         </Heading>
         <Text fontSize='sm' color='fg.muted' textAlign='center'>
-          Get started with BucketHQ today
+          {inviteToken
+            ? "Create an account to accept the invitation"
+            : "Get started with BucketHQ today"}
         </Text>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -91,13 +95,15 @@ export function SignupForm() {
               {...register("email", { required: "Email is required" })}
             />
 
-            <TextField
-              label='Company / Organization Name'
-              type='text'
-              placeholder='e.g. Official or Acme Corp'
-              error={errors.orgName}
-              {...register("orgName", { required: "Company name is required" })}
-            />
+            {!inviteToken && (
+              <TextField
+                label='Company / Organization Name'
+                type='text'
+                placeholder='e.g. Official or Acme Corp'
+                error={errors.orgName}
+                {...register("orgName", { required: !inviteToken ? "Company name is required" : false })}
+              />
+            )}
 
             <TextField
               label='Password'
@@ -111,7 +117,7 @@ export function SignupForm() {
             />
 
             <Button type='submit' colorPalette='teal' loading={loading} width='100%' mt={2}>
-              Get Started
+              {inviteToken ? "Create Account & Join" : "Get Started"}
             </Button>
           </Stack>
         </form>
@@ -120,7 +126,15 @@ export function SignupForm() {
 
         <Text fontSize='xs' color='fg.muted' textAlign='center'>
           Already have an account?{" "}
-          <Button variant='plain' size='xs' colorPalette='teal' type='button' onClick={() => router.push("/auth/login")}>
+          <Button
+            variant='plain'
+            size='xs'
+            colorPalette='teal'
+            type='button'
+            onClick={() =>
+              router.push(inviteToken ? `/auth/login?invite=${inviteToken}` : "/auth/login")
+            }
+          >
             Log in
           </Button>
         </Text>

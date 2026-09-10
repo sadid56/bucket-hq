@@ -3,19 +3,42 @@ import { useAppMutation } from "@/hooks/useAppMutation";
 import { TeamEndpoints } from "./api";
 import { teamKeys } from "./keys";
 
-export function useMembers(orgId?: string) {
+export function useMembers(orgId?: string, initialData?: any[]) {
   return useQuery({
     queryKey: teamKeys.lists(orgId),
     queryFn: () => TeamEndpoints.getMembers(orgId ? { orgId } : undefined),
+    enabled: !!orgId,
+    initialData,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useInvitations(orgId?: string) {
+  return useQuery({
+    queryKey: teamKeys.invitations(orgId),
+    queryFn: () => TeamEndpoints.getInvitations(orgId ? { orgId } : undefined),
+    enabled: !!orgId,
+    staleTime: 30 * 1000,
   });
 }
 
 export function useInviteMember() {
-  return useAppMutation<{ email: string; role: "OWNER" | "EDITOR" | "VIEWER" }>({
+  return useAppMutation<{ orgId?: string; email: string; role: "OWNER" | "EDITOR" | "VIEWER" }>({
     mutationFn: TeamEndpoints.inviteMember,
-    invalidateKeys: [teamKeys.lists()],
-    successMessage: "Member invited successfully",
-    errorMessage: "Failed to invite member",
+    invalidateKeys: [teamKeys.lists(), teamKeys.invitations()],
+    successMessage: "Invitation sent successfully",
+    errorMessage: "Failed to send invitation",
+  });
+}
+
+export function useRevokeInvitation() {
+  return useAppMutation<{ invitationId: string; orgId?: string }>({
+    mutationFn: TeamEndpoints.revokeInvitation,
+    invalidateKeys: [teamKeys.invitations()],
+    successMessage: "Invitation revoked",
+    errorMessage: "Failed to revoke invitation",
   });
 }
 

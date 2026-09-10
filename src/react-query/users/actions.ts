@@ -17,10 +17,11 @@ export function useUser(id: string) {
   });
 }
 
-export function useGetMe() {
+export function useGetMe(initialData?: any) {
   return useQuery({
     queryKey: ["users", "me"],
     queryFn: UserEndpoints.getMe,
+    initialData,
   });
 }
 

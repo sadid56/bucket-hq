@@ -10,6 +10,7 @@ export async function proxy(request: NextRequest) {
     response = newResponse;
   });
 
+  // Supabase SSR requires getUser in middleware to refresh auth cookies
   const {
     data: { user },
   } = await supabase.auth.getUser();

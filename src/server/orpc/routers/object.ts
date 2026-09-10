@@ -14,20 +14,21 @@ export const objectRouter = {
       })
     )
     .handler(async ({ context, input }) => {
-      const connection = await prisma.storageConnection.findUnique({
-        where: { id: input.connectionId },
-      });
+      const [connection] = await Promise.all([
+        prisma.storageConnection.findUnique({
+          where: { id: input.connectionId },
+        }),
+        validatePathPermissions(
+          context.user.id,
+          input.connectionId,
+          input.prefix,
+          "READ"
+        ),
+      ]);
 
       if (!connection) {
         throw new ORPCError("NOT_FOUND", { message: "Storage connection not found" });
       }
-
-      await validatePathPermissions(
-        context.user.id,
-        input.connectionId,
-        input.prefix,
-        "READ"
-      );
 
       const client = getStorageClient(connection);
       const res = await client.listObjects(input.prefix);

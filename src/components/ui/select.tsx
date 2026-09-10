@@ -15,11 +15,39 @@ export const SelectTrigger = React.forwardRef<
 >(function SelectTrigger(props, ref) {
   const { children, clearable, ...rest } = props
   return (
-    <ChakraSelect.Control {...rest}>
+    <ChakraSelect.Control
+      {...rest}
+      css={{
+        position: "relative",
+        borderRadius: "md",
+        "& [data-part=trigger]": {
+          borderColor: "rgba(255, 255, 255, 0.28) !important",
+          borderWidth: "1.5px !important",
+          borderRadius: "md",
+          transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+        },
+        "&:hover [data-part=trigger]": {
+          borderColor: "rgba(255, 255, 255, 0.5) !important",
+        },
+        "&[data-state=open] [data-part=trigger]": {
+          borderColor: "var(--chakra-colors-teal-400, #38b2ac) !important",
+          boxShadow: "0 0 0 1px var(--chakra-colors-teal-400, #38b2ac), 0 0 12px rgba(56, 178, 172, 0.35) !important",
+        },
+        "&[data-state=open] [data-part=indicator]": {
+          transform: "rotate(180deg)",
+          color: "var(--chakra-colors-teal-400, #38b2ac)",
+        },
+        ...rest.css,
+      }}
+    >
       <ChakraSelect.Trigger ref={ref}>{children}</ChakraSelect.Trigger>
       <ChakraSelect.IndicatorGroup>
         {clearable && <SelectClearTrigger />}
-        <ChakraSelect.Indicator />
+        <ChakraSelect.Indicator
+          css={{
+            transition: "transform 0.2s ease, color 0.2s ease",
+          }}
+        />
       </ChakraSelect.IndicatorGroup>
     </ChakraSelect.Control>
   )
@@ -51,11 +79,35 @@ export const SelectContent = React.forwardRef<
   HTMLDivElement,
   SelectContentProps
 >(function SelectContent(props, ref) {
-  const { portalled = true, portalRef, ...rest } = props
+  const { portalled = true, portalRef, style, css, ...rest } = props
   return (
     <Portal disabled={!portalled} container={portalRef}>
-      <ChakraSelect.Positioner>
-        <ChakraSelect.Content {...rest} ref={ref} />
+      <ChakraSelect.Positioner style={{ zIndex: 2200 }}>
+        <ChakraSelect.Content
+          {...rest}
+          ref={ref}
+          style={{
+            background: "#18202c",
+            border: "1.5px solid var(--chakra-colors-teal-500, #319795)",
+            borderRadius: "10px",
+            boxShadow:
+              "0 0 0 1px rgba(56, 178, 172, 0.25), 0 20px 40px -5px rgba(0, 0, 0, 0.95), 0 10px 20px -5px rgba(0, 0, 0, 0.8)",
+            padding: "6px",
+            marginTop: "6px",
+            zIndex: 2200,
+            minWidth: "160px",
+            overflow: "hidden",
+            ...style,
+          }}
+          css={{
+            animationDuration: "150ms",
+            animationTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
+            borderColor: "var(--chakra-colors-teal-500, #319795) !important",
+            borderWidth: "1.5px !important",
+            borderStyle: "solid !important",
+            ...css,
+          }}
+        />
       </ChakraSelect.Positioner>
     </Portal>
   )
@@ -65,17 +117,46 @@ export const SelectItem = React.forwardRef<
   HTMLDivElement,
   ChakraSelect.ItemProps
 >(function SelectItem(props, ref) {
-  const { item, children, ...rest } = props
+  const { item, children, style, css, ...rest } = props
   return (
     <ChakraSelect.Item
       key={item.value}
       item={item}
       {...rest}
       ref={ref}
-      style={{ maxWidth: "100%", overflow: "hidden", ...rest.style }}
+      style={{
+        maxWidth: "100%",
+        overflow: "hidden",
+        borderRadius: "6px",
+        padding: "8px 12px",
+        margin: "2px 0",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        ...style,
+      }}
+      css={{
+        "&[data-highlighted], &:hover": {
+          background: "rgba(255, 255, 255, 0.08) !important",
+          color: "#fff !important",
+        },
+        "&[data-state=checked]": {
+          background: "rgba(49, 151, 149, 0.2) !important",
+          color: "var(--chakra-colors-teal-300, #4fd1c5) !important",
+          fontWeight: "600 !important",
+        },
+        ...css,
+      }}
     >
       {children}
-      <ChakraSelect.ItemIndicator />
+      <ChakraSelect.ItemIndicator
+        css={{
+          color: "var(--chakra-colors-teal-400, #38b2ac)",
+          marginLeft: "auto",
+        }}
+      />
     </ChakraSelect.Item>
   )
 })

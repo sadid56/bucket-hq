@@ -2,7 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { AuditEndpoints } from "./api";
 import { auditsKeys } from "./keys";
 
-export function useAudits(filters: { action?: string; userId?: string; startDate?: string; endDate?: string }) {
+export function useAudits(filters?: {
+  orgId?: string;
+  action?: string;
+  userId?: string;
+  storageConnectionId?: string;
+  startDate?: string;
+  endDate?: string;
+}) {
   return useQuery({
     queryKey: auditsKeys.lists(filters),
     queryFn: () => AuditEndpoints.getAudits(filters),

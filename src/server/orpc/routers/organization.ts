@@ -3,6 +3,7 @@ import { authedProcedure, requireOrgRole } from "../base";
 import { prisma } from "@/server/db";
 import { generateUniqueOrgSlug } from "@/server/utils/generateSlug";
 import { ORPCError } from "@orpc/server";
+import { invalidateUserCache } from "@/server/lib/auth";
 
 export const organizationRouter = {
   list: authedProcedure.handler(async ({ context }) => {
@@ -77,6 +78,7 @@ export const organizationRouter = {
           },
         });
 
+        invalidateUserCache(context.user.id);
         return org;
       });
     }),
@@ -91,6 +93,7 @@ export const organizationRouter = {
     .use(requireOrgRole(["OWNER"]))
     .handler(async ({ context, input }) => {
       const slug = await generateUniqueOrgSlug(input.name, context.orgId!);
+      invalidateUserCache(context.user.id);
       return await prisma.organization.update({
         where: { id: context.orgId! },
         data: {
@@ -108,6 +111,7 @@ export const organizationRouter = {
     )
     .use(requireOrgRole(["OWNER"]))
     .handler(async ({ context }) => {
+      invalidateUserCache(context.user.id);
       return await prisma.organization.delete({
         where: { id: context.orgId! },
       });

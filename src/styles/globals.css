@@ -60,3 +60,11 @@ select,
   outline: none !important;
   box-shadow: none !important;
 }
+
+.recharts-cartesian-axis-tick text,
+.recharts-cartesian-axis-tick tspan,
+.recharts-cartesian-axis-tick-value,
+.recharts-text {
+  font-size: 10px !important;
+  fill: #64748b !important;
+}

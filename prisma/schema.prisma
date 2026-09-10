@@ -30,6 +30,12 @@ enum AccessLevel {
   READ_WRITE
 }
 
+enum EnvironmentType {
+  PRODUCTION
+  STAGING
+  DEVELOPMENT
+}
+
 model User {
   id               String            @id // Matches Supabase Auth uid
   email            String            @unique
@@ -46,6 +52,7 @@ model User {
   teamAccesses     TeamAccess[]
   auditLogs        AuditLog[]
   pathRestrictions PathRestriction[]
+  sentInvitations  TeamInvitation[]  @relation("SentInvitations")
 }
 
 model Account {
@@ -85,6 +92,7 @@ model Organization {
   updatedAt          DateTime            @updatedAt
   teamAccesses       TeamAccess[]
   storageConnections StorageConnection[]
+  invitations        TeamInvitation[]
 }
 
 model TeamAccess {
@@ -100,6 +108,22 @@ model TeamAccess {
   @@unique([userId, organizationId])
 }
 
+model TeamInvitation {
+  id             String       @id @default(cuid())
+  email          String
+  role           OrgRole      @default(VIEWER)
+  token          String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedById    String
+  invitedBy      User         @relation("SentInvitations", fields: [invitedById], references: [id], onDelete: Cascade)
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, email])
+}
+
 model StorageConnection {
   id               String            @id @default(cuid())
   organizationId   String
@@ -110,6 +134,8 @@ model StorageConnection {
   authTag          String            // Auth tag for AES-GCM
   bucketName       String?
   region           String?
+  projectName      String            @default("General")
+  environment      EnvironmentType   @default(PRODUCTION)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)

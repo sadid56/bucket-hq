@@ -28,7 +28,13 @@ export const auditRouter = {
         // Member or viewing specific org
         let orgIds: string[] = [];
         if (targetOrgId) {
-          orgIds = [targetOrgId];
+          const resolvedOrg = await prisma.organization.findFirst({
+            where: { OR: [{ id: targetOrgId }, { slug: targetOrgId }] },
+            select: { id: true },
+          });
+          if (resolvedOrg) {
+            orgIds = [resolvedOrg.id];
+          }
         } else {
           orgIds = context.user.teamAccesses.map((ta) => ta.organizationId);
         }

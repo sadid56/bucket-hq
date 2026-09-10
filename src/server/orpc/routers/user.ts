@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { authedProcedure, adminProcedure } from "../base";
 import { prisma } from "@/server/db";
 import { parseDevice } from "@/server/utils/parseDevice";
+import { invalidateUserCache } from "@/server/lib/auth";
 
 export const userRouter = {
   getMe: authedProcedure.handler(async ({ context }) => {
@@ -37,10 +38,9 @@ export const userRouter = {
             context.user.id
           );
         }
-      } catch (err) {
-        console.error("Failed to sync updated profile to Supabase auth:", err);
-      }
+      } catch {}
 
+      invalidateUserCache(context.user.id);
       return updatedUser;
     }),
 
@@ -134,6 +134,7 @@ export const userRouter = {
         throw new ORPCError("BAD_REQUEST", { message: "You cannot ban yourself" });
       }
 
+      invalidateUserCache(input.userId);
       return await prisma.user.update({
         where: { id: input.userId },
         data: {
@@ -168,10 +169,9 @@ export const userRouter = {
           input.role,
           input.userId
         );
-      } catch (err) {
-        console.error("Failed to sync role to Supabase metadata:", err);
-      }
+      } catch {}
 
+      invalidateUserCache(input.userId);
       return updatedUser;
     }),
 
@@ -182,6 +182,7 @@ export const userRouter = {
         throw new ORPCError("BAD_REQUEST", { message: "You cannot delete yourself" });
       }
 
+      invalidateUserCache(input.id);
       return await prisma.user.delete({
         where: { id: input.id },
       });

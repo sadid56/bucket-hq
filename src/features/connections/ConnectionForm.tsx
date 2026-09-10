@@ -14,6 +14,8 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
   const [label, setLabel] = useState("");
   const [bucketName, setBucketName] = useState("");
   const [region, setRegion] = useState("us-east-1");
+  const [projectName, setProjectName] = useState("General");
+  const [environment, setEnvironment] = useState<"PRODUCTION" | "STAGING" | "DEVELOPMENT">("PRODUCTION");
 
   const [accessKeyId, setAccessKeyId] = useState("");
   const [secretAccessKey, setSecretAccessKey] = useState("");
@@ -54,10 +56,14 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
         credentials,
         bucketName: providerType === "CLOUDINARY" ? null : bucketName,
         region: providerType === "AWS_S3" ? region : null,
+        projectName: projectName.trim() || "General",
+        environment,
       });
 
       setLabel("");
       setBucketName("");
+      setProjectName("General");
+      setEnvironment("PRODUCTION");
       setAccessKeyId("");
       setSecretAccessKey("");
       setAccountId("");
@@ -114,15 +120,59 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
 
         <form onSubmit={handleSubmit}>
           <Stack gap={4}>
-            {/* Connection Label */}
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+              <Stack gap={1.5}>
+                <Text fontSize="sm" fontWeight="semibold">Connection Label</Text>
+                <Input
+                  placeholder="e.g. User Avatars Bucket"
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  required
+                />
+              </Stack>
+
+              <Stack gap={1.5}>
+                <Text fontSize="sm" fontWeight="semibold">Project / Group</Text>
+                <Input
+                  placeholder="e.g. E-Commerce Store, Marketing App"
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                />
+              </Stack>
+            </SimpleGrid>
+
+            {/* Environment Selector */}
             <Stack gap={1.5}>
-              <Text fontSize="sm" fontWeight="semibold">Connection Label</Text>
-              <Input
-                placeholder="e.g. Acme S3 Production"
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                required
-              />
+              <Text fontSize="xs" fontWeight="semibold" color="fg.muted">Target Environment</Text>
+              <Flex gap={2}>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant={environment === "PRODUCTION" ? "solid" : "outline"}
+                  colorPalette={environment === "PRODUCTION" ? "red" : "gray"}
+                  onClick={() => setEnvironment("PRODUCTION")}
+                >
+                  Production
+                </Button>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant={environment === "STAGING" ? "solid" : "outline"}
+                  colorPalette={environment === "STAGING" ? "blue" : "gray"}
+                  onClick={() => setEnvironment("STAGING")}
+                >
+                  Staging
+                </Button>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant={environment === "DEVELOPMENT" ? "solid" : "outline"}
+                  colorPalette={environment === "DEVELOPMENT" ? "teal" : "gray"}
+                  onClick={() => setEnvironment("DEVELOPMENT")}
+                >
+                  Development
+                </Button>
+              </Flex>
             </Stack>
 
             {/* AWS S3 Specific Fields */}

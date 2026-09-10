@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { Box, Flex, Text, Button, Stack, Heading, Skeleton, createListCollection, Menu } from "@chakra-ui/react";
+import { Box, Flex, Text, Button, Stack, Heading, Skeleton, createListCollection, Menu, Badge } from "@chakra-ui/react";
 import { SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectValueText } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { useConnections } from "@/react-query/connections/actions";
@@ -18,22 +18,62 @@ import { toaster } from "@/components/ui/toaster";
 import { useParams } from "next/navigation";
 import { StorageItem } from "./types";
 
-export function FileExplorer() {
+interface FileExplorerProps {
+  initialConnections?: any[];
+}
+
+export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
   const params = useParams();
   const orgId = params?.orgId as string | undefined;
-  const { data: connections = [], isLoading: loadingConnections } = useConnections(orgId);
+  const { data: connections = initialConnections, isLoading: loadingConnections } = useConnections(
+    orgId,
+    initialConnections,
+  );
   const [connectionId, setConnectionId] = useQueryState("cId");
 
   const activeConnectionId = connectionId || connections[0]?.id || "";
 
-  const connCollection = useMemo(() => {
-    return createListCollection({
-      items: connections.map((c) => ({
-        label: `${c.label} (${c.providerType === "AWS_S3" ? "S3" : c.providerType === "CLOUDFLARE_R2" ? "R2" : "Cloudinary"})`,
-        value: c.id,
-      })),
+  const activeConnection = useMemo(() => {
+    return connections.find((c) => c.id === activeConnectionId);
+  }, [connections, activeConnectionId]);
+
+  const projects = useMemo(() => {
+    const list: string[] = [];
+    connections.forEach((c) => {
+      const p = c.projectName?.trim() || "General";
+      if (!list.includes(p)) list.push(p);
     });
+    return list;
   }, [connections]);
+
+  const [selectedProject, setSelectedProject] = useState<string>("ALL");
+
+  const projectCollection = useMemo(() => {
+    return createListCollection<{ label: string; value: string }>({
+      items: [
+        { label: "All Projects", value: "ALL" },
+        ...projects.map((p) => ({ label: p, value: p })),
+      ],
+    });
+  }, [projects]);
+
+  const displayedConnections = useMemo(() => {
+    if (selectedProject === "ALL") return connections;
+    return connections.filter((c) => (c.projectName?.trim() || "General") === selectedProject);
+  }, [connections, selectedProject]);
+
+  const connCollection = useMemo(() => {
+    return createListCollection<{ label: string; value: string }>({
+      items: displayedConnections.map((c) => {
+        const env = c.environment === "STAGING" ? "STG" : c.environment === "DEVELOPMENT" ? "DEV" : "PROD";
+        const provider = c.providerType === "AWS_S3" ? "S3" : c.providerType === "CLOUDFLARE_R2" ? "R2" : "Cloudinary";
+        return {
+          label: `${c.label} (${provider} · ${env})`,
+          value: c.id,
+        };
+      }),
+    });
+  }, [displayedConnections]);
 
   const [path, setPath] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
@@ -64,7 +104,9 @@ export function FileExplorer() {
     prefix: path,
   });
 
-  const showSkeleton = loadingConnections || (connections.length > 0 && !activeConnectionId) || loading;
+  const showSkeleton =
+    (loadingConnections && connections.length === 0) ||
+    (Boolean(activeConnectionId) && loading && !data);
 
   const deleteMutation = useDeleteObject();
   const getSigningMutation = useGetSigningUrl();
@@ -192,7 +234,6 @@ export function FileExplorer() {
     }
   }, [activeConnectionId, path, getSigningMutation, refetch]);
 
-  // Use custom hook for file uploads
   const { uploads, handleUpload } = useFileUpload(activeConnectionId, path, refetch, getSigningMutation);
 
   const getFormatSize = (bytes: number) => {
@@ -277,26 +318,80 @@ export function FileExplorer() {
                 </Button>
               </Flex>
             )}
-            {connections.length > 0 && (
-              <Box minW={{ base: "0", sm: "180px" }} flex={{ base: 1, sm: "initial" }}>
+            {projects.length > 1 && (
+              <Box minW={{ base: "0", sm: "140px" }}>
                 <SelectRoot
-                  collection={connCollection}
-                  value={[activeConnectionId]}
-                  onValueChange={(details) => details.value[0] && handleConnectionChange(details.value[0])}
+                  collection={projectCollection}
+                  value={[selectedProject]}
+                  onValueChange={(details) => {
+                    if (details.value[0]) {
+                      const newProj = details.value[0];
+                      setSelectedProject(newProj);
+                      const firstInProj = connections.find(
+                        (c) => newProj === "ALL" || (c.projectName?.trim() || "General") === newProj
+                      );
+                      if (firstInProj) handleConnectionChange(firstInProj.id);
+                    }
+                  }}
                   size="sm"
                 >
                   <SelectTrigger>
-                    <SelectValueText placeholder="Select connection" />
+                    <SelectValueText placeholder="Project" />
                   </SelectTrigger>
-                  <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
-                    {connCollection.items.map((c) => (
-                      <SelectItem item={c} key={c.value}>
-                        {c.label}
+                  <SelectContent>
+                    {projectCollection.items.map((p: any) => (
+                      <SelectItem item={p} key={p.value}>
+                        {p.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </SelectRoot>
               </Box>
+            )}
+
+            {connections.length > 0 && (
+              <Flex align="center" gap={2} flex={{ base: 1, sm: "initial" }}>
+                <Box minW={{ base: "0", sm: "200px" }} flex="1">
+                  <SelectRoot
+                    collection={connCollection}
+                    value={[activeConnectionId]}
+                    onValueChange={(details) => details.value[0] && handleConnectionChange(details.value[0])}
+                    size="sm"
+                  >
+                    <SelectTrigger>
+                      <SelectValueText placeholder="Select bucket" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {connCollection.items.map((c: any) => (
+                        <SelectItem item={c} key={c.value}>
+                          {c.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectRoot>
+                </Box>
+                {activeConnection && (
+                  <Badge
+                    size="xs"
+                    colorPalette={
+                      activeConnection.environment === "PRODUCTION"
+                        ? "red"
+                        : activeConnection.environment === "STAGING"
+                        ? "blue"
+                        : "teal"
+                    }
+                    variant="surface"
+                    px={2}
+                    py={1}
+                  >
+                    {activeConnection.environment === "PRODUCTION"
+                      ? "PROD"
+                      : activeConnection.environment === "STAGING"
+                      ? "STAGING"
+                      : "DEV"}
+                  </Badge>
+                )}
+              </Flex>
             )}
 
             {connections.length > 0 && (
@@ -416,8 +511,12 @@ export function FileExplorer() {
       <ConfirmDialog
         isOpen={deleteItem !== null}
         title={`Delete ${deleteItem?.type === "folder" ? "Folder" : "File"}`}
-        message={`Are you sure you want to delete "${deleteItem?.name}"? This action is permanent and cannot be undone.`}
-        confirmLabel="Delete"
+        message={
+          activeConnection?.environment === "PRODUCTION"
+            ? `⚠️ WARNING: This bucket is in the PRODUCTION environment ("${activeConnection?.projectName || "General"}"). Deleting "${deleteItem?.name}" is permanent and cannot be undone. Are you sure you want to proceed?`
+            : `Are you sure you want to delete "${deleteItem?.name}"? This action is permanent and cannot be undone.`
+        }
+        confirmLabel={activeConnection?.environment === "PRODUCTION" ? "Yes, Delete from Prod" : "Delete"}
         isLoading={deleteMutation.isPending}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteItem(null)}

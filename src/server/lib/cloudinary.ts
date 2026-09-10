@@ -19,7 +19,6 @@ export async function uploadToCloudinary(fileBase64: string, options?: UploadOpt
     });
     return res.secure_url;
   } catch (error) {
-    console.error("Cloudinary upload failed:", error);
     throw new Error("Failed to upload image");
   }
 }
@@ -34,8 +33,5 @@ export const deleteFromCloudinary = async (url: string) => {
     if (!publicId) return;
 
     await cloudinary.uploader.destroy(publicId);
-    console.log(`Deleted Cloudinary image: ${publicId}`);
-  } catch (err) {
-    console.warn("Failed to delete image from Cloudinary:", err);
-  }
+  } catch {}
 };

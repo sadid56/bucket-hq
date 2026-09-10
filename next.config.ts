@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
- experimental: {
-    optimizePackageImports: ["@chakra-ui/react"],
-    
+  experimental: {
+    optimizePackageImports: ["@chakra-ui/react", "recharts"],
+    staleTimes: {
+      dynamic: 60,
+      static: 180,
+    },
   },
-  devIndicators: false
+  devIndicators: false,
 };
 
 export default nextConfig;

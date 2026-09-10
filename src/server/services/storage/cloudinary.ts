@@ -33,13 +33,20 @@ export class CloudinaryAdapter implements StorageAdapter {
     }
 
     try {
-      let foldersResponse;
-      if (!cleanPrefix) {
-        foldersResponse = await cloudinary.api.root_folders();
-      } else {
-        const parentFolder = cleanPrefix.slice(0, -1);
-        foldersResponse = await cloudinary.api.sub_folders(parentFolder);
-      }
+      const foldersPromise = !cleanPrefix
+        ? cloudinary.api.root_folders()
+        : cloudinary.api.sub_folders(cleanPrefix.slice(0, -1));
+
+      const resourcesPromise = cloudinary.api.resources({
+        type: "upload",
+        prefix: cleanPrefix,
+        max_results: 100,
+      });
+
+      const [foldersResponse, resourcesResponse] = await Promise.all([
+        foldersPromise.catch(() => ({ folders: [] })),
+        resourcesPromise.catch(() => ({ resources: [] })),
+      ]);
 
       if (foldersResponse.folders) {
         for (const folder of foldersResponse.folders) {
@@ -53,12 +60,6 @@ export class CloudinaryAdapter implements StorageAdapter {
           });
         }
       }
-
-      const resourcesResponse = await cloudinary.api.resources({
-        type: "upload",
-        prefix: cleanPrefix,
-        max_results: 100,
-      });
 
       if (resourcesResponse.resources) {
         for (const res of resourcesResponse.resources) {

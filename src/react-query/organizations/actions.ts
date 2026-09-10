@@ -3,10 +3,11 @@ import { useAppMutation } from "@/hooks/useAppMutation";
 import { OrganizationEndpoints } from "./api";
 import { organizationsKeys } from "./keys";
 
-export function useOrgs() {
+export function useOrgs(initialData?: any) {
   return useQuery({
     queryKey: organizationsKeys.lists(),
     queryFn: OrganizationEndpoints.getOrgs,
+    initialData,
   });
 }
 

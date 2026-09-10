@@ -4,9 +4,19 @@ export const TeamEndpoints = {
   getMembers: (input?: { orgId?: string }) => client.team.listMembers(input),
 
   inviteMember: (body: {
+    orgId?: string;
     email: string;
     role: "OWNER" | "EDITOR" | "VIEWER";
   }) => client.team.inviteMember(body),
+
+  getInvitations: (input?: { orgId?: string }) => client.team.listInvitations(input),
+
+  revokeInvitation: ({ invitationId, orgId }: { invitationId: string; orgId?: string }) =>
+    client.team.revokeInvitation({ invitationId, orgId }),
+
+  getInvitation: (token: string) => client.team.getInvitation({ token }),
+
+  acceptInvitation: (token: string) => client.team.acceptInvitation({ token }),
 
   updateMemberRole: ({
     userId,

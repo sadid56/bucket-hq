@@ -87,7 +87,7 @@ export function GlobalAuditLogs() {
               <SelectTrigger>
                 <SelectValueText placeholder='Select action' />
               </SelectTrigger>
-              <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
+              <SelectContent>
                 {actionCollection.items.map((act) => (
                   <SelectItem item={act} key={act.value}>
                     {act.label}

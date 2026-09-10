@@ -8,6 +8,10 @@ export function useObjects({ connectionId, prefix }: { connectionId: string; pre
     queryKey: objectsKeys.lists(connectionId, prefix),
     queryFn: () => ObjectEndpoints.getObjects({ connectionId, prefix }),
     enabled: !!connectionId,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: (previousData) => previousData,
   });
 }
 

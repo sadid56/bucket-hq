@@ -38,7 +38,7 @@ export function PathRestrictionModal({ isOpen, user, onClose }: PathRestrictionM
   const [newAccess, setNewAccess] = useState<"READ" | "WRITE" | "READ_WRITE">("READ");
 
   const connCollection = React.useMemo(() => {
-    return createListCollection({
+    return createListCollection<{ label: string; value: string }>({
       items: connections.map((c) => ({
         label: `${c.label} (${c.providerType})`,
         value: c.id,
@@ -170,8 +170,8 @@ export function PathRestrictionModal({ isOpen, user, onClose }: PathRestrictionM
                 <SelectTrigger>
                   <SelectValueText placeholder="Select Storage Connection" />
                 </SelectTrigger>
-                <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
-                  {connCollection.items.map((c) => (
+                <SelectContent>
+                  {connCollection.items.map((c: any) => (
                     <SelectItem item={c} key={c.value}>
                       {c.label}
                     </SelectItem>
@@ -208,7 +208,7 @@ export function PathRestrictionModal({ isOpen, user, onClose }: PathRestrictionM
                         <SelectTrigger>
                           <SelectValueText placeholder="Access Level" />
                         </SelectTrigger>
-                        <SelectContent style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
+                        <SelectContent>
                           {accessCollection.items.map((access) => (
                             <SelectItem item={access} key={access.value}>
                               {access.label}
