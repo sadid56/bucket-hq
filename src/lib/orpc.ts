@@ -5,13 +5,16 @@ import type { RouterClient } from "@orpc/server";
 import type { AppRouter } from "@/server/orpc/router";
 
 const getBaseUrl = () => {
-  if (typeof window !== "undefined") return "/api/rpc";
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api/rpc`;
-  return `http://localhost:${process.env.PORT || 3000}/api/rpc`;
+  if (process.env.NODE_ENV === "development") {
+    return typeof window !== "undefined"
+      ? `${window.location.origin}/api/rpc`
+      : `http://localhost:${process.env.PORT || 3000}/api/rpc`;
+  }
+  return "https://bucket-hq.vercel.app/api/rpc";
 };
 
 const link = new RPCLink<any>({
-  url: getBaseUrl(),
+  url: () => getBaseUrl(),
   headers: () => {
     const headers: Record<string, string> = {};
 

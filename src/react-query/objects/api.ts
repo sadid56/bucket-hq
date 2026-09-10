@@ -4,10 +4,14 @@ export const ObjectEndpoints = {
   getObjects: ({
     connectionId,
     prefix,
+    continuationToken,
+    pageSize,
   }: {
     connectionId: string;
     prefix: string;
-  }) => client.object.list({ connectionId, prefix }),
+    continuationToken?: string;
+    pageSize?: number;
+  }) => client.object.list({ connectionId, prefix, continuationToken, pageSize }),
 
   deleteObject: ({
     connectionId,

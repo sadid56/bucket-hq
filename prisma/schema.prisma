@@ -134,6 +134,7 @@ model StorageConnection {
   authTag          String            // Auth tag for AES-GCM
   bucketName       String?
   region           String?
+  baseUrl          String?           // Optional custom domain / CDN base URL
   projectName      String            @default("General")
   environment      EnvironmentType   @default(PRODUCTION)
   createdAt        DateTime          @default(now())

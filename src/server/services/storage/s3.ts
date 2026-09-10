@@ -6,7 +6,7 @@ import {
   DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { StorageAdapter, ListResult, StorageItem } from "./adapter";
+import { StorageAdapter, ListResult, StorageItem, ListOptions } from "./adapter";
 
 export class S3Adapter implements StorageAdapter {
   protected client: S3Client;
@@ -31,13 +31,14 @@ export class S3Adapter implements StorageAdapter {
     });
   }
 
-  async listObjects(prefix: string = ""): Promise<ListResult> {
+  async listObjects(prefix: string = "", options?: ListOptions): Promise<ListResult> {
     const normalizedPrefix = prefix && !prefix.endsWith("/") ? `${prefix}/` : prefix;
 
     const command = new ListObjectsV2Command({
       Bucket: this.bucket,
       Prefix: normalizedPrefix,
       Delimiter: "/",
+      ContinuationToken: options?.continuationToken,
     });
 
     const response = await this.client.send(command);
@@ -81,6 +82,8 @@ export class S3Adapter implements StorageAdapter {
     return {
       items,
       commonPrefixes,
+      nextContinuationToken: response.NextContinuationToken,
+      isTruncated: response.IsTruncated,
     };
   }
 

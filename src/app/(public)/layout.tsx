@@ -2,12 +2,25 @@ import React from "react";
 import { Flex, Box } from "@chakra-ui/react";
 import { Navbar } from "@/components/shared/Navbar";
 import { Footer } from "@/components/shared/Footer";
+import { createClient } from "@/lib/supabaseServer";
+import type { User } from "@supabase/supabase-js";
 
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  let user: User | null = null;
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    user = authUser;
+  } catch {
+    // Guest or cookie read error
+  }
+
   return (
     <Flex
       minHeight="100vh"
@@ -29,7 +42,7 @@ export default function PublicLayout({
         zIndex: 0,
       }}
     >
-      <Navbar />
+      <Navbar user={user} />
       <Box as="main" flex="1" position="relative" zIndex={1}>
         {children}
       </Box>
@@ -37,3 +50,4 @@ export default function PublicLayout({
     </Flex>
   );
 }
+

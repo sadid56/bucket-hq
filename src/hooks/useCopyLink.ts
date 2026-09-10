@@ -17,7 +17,8 @@ export function useCopyLink(activeConnectionId: string, getSigningMutation: any)
         connectionId: activeConnectionId,
         key: item.key,
       });
-      await navigator.clipboard.writeText(res.url);
+      const urlToCopy = res.publicUrl || res.url;
+      await navigator.clipboard.writeText(urlToCopy);
       toaster.create({
         title: "Link copied to clipboard",
         type: "success",

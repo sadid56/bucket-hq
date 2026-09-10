@@ -23,6 +23,7 @@ export const connectionRouter = {
           providerType: true,
           bucketName: true,
           region: true,
+          baseUrl: true,
           projectName: true,
           environment: true,
           createdAt: true,
@@ -38,8 +39,9 @@ export const connectionRouter = {
         label: z.string().min(1, "Connection label is required"),
         providerType: z.enum(["AWS_S3", "CLOUDFLARE_R2", "CLOUDINARY"]),
         credentials: z.any(),
-        bucketName: z.string().optional(),
-        region: z.string().optional(),
+        bucketName: z.string().nullable().optional(),
+        region: z.string().nullable().optional(),
+        baseUrl: z.string().url().nullable().optional().or(z.literal("")),
         projectName: z.string().trim().min(1).default("General").optional(),
         environment: z.enum(["PRODUCTION", "STAGING", "DEVELOPMENT"]).default("PRODUCTION").optional(),
       })
@@ -59,6 +61,7 @@ export const connectionRouter = {
           authTag,
           bucketName: input.bucketName || null,
           region: input.region || null,
+          baseUrl: input.baseUrl || null,
           projectName: input.projectName || "General",
           environment: input.environment || "PRODUCTION",
         },
@@ -68,6 +71,7 @@ export const connectionRouter = {
           providerType: true,
           bucketName: true,
           region: true,
+          baseUrl: true,
           projectName: true,
           environment: true,
           createdAt: true,
@@ -82,8 +86,9 @@ export const connectionRouter = {
         orgId: z.string().optional(),
         connectionId: z.string(),
         label: z.string().optional(),
-        bucketName: z.string().optional(),
-        region: z.string().optional(),
+        bucketName: z.string().nullable().optional(),
+        region: z.string().nullable().optional(),
+        baseUrl: z.string().url().nullable().optional().or(z.literal("")),
         projectName: z.string().trim().min(1).optional(),
         environment: z.enum(["PRODUCTION", "STAGING", "DEVELOPMENT"]).optional(),
         credentials: z.any().optional(),
@@ -96,6 +101,7 @@ export const connectionRouter = {
       if (input.label !== undefined) updateData.label = input.label;
       if (input.bucketName !== undefined) updateData.bucketName = input.bucketName;
       if (input.region !== undefined) updateData.region = input.region;
+      if (input.baseUrl !== undefined) updateData.baseUrl = input.baseUrl || null;
       if (input.projectName !== undefined) updateData.projectName = input.projectName;
       if (input.environment !== undefined) updateData.environment = input.environment;
 
@@ -116,6 +122,7 @@ export const connectionRouter = {
           providerType: true,
           bucketName: true,
           region: true,
+          baseUrl: true,
           projectName: true,
           environment: true,
           createdAt: true,

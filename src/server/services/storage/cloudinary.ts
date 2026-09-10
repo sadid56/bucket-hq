@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import { StorageAdapter, ListResult, StorageItem } from "./adapter";
+import { StorageAdapter, ListResult, StorageItem, ListOptions } from "./adapter";
 
 export class CloudinaryAdapter implements StorageAdapter {
   private cloudName: string;
@@ -23,7 +23,7 @@ export class CloudinaryAdapter implements StorageAdapter {
     });
   }
 
-  async listObjects(prefix: string = ""): Promise<ListResult> {
+  async listObjects(prefix: string = "", options?: ListOptions): Promise<ListResult> {
     const items: StorageItem[] = [];
     const commonPrefixes: string[] = [];
 
@@ -40,7 +40,8 @@ export class CloudinaryAdapter implements StorageAdapter {
       const resourcesPromise = cloudinary.api.resources({
         type: "upload",
         prefix: cleanPrefix,
-        max_results: 100,
+        max_results: options?.maxKeys || 50,
+        next_cursor: options?.continuationToken,
       });
 
       const [foldersResponse, resourcesResponse] = await Promise.all([
@@ -82,6 +83,8 @@ export class CloudinaryAdapter implements StorageAdapter {
       return {
         items,
         commonPrefixes,
+        nextContinuationToken: resourcesResponse.next_cursor,
+        isTruncated: Boolean(resourcesResponse.next_cursor),
       };
     } catch (error: any) {
       if (error?.error?.http_code === 404) {

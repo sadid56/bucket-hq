@@ -154,8 +154,10 @@ export function DashboardLayoutClient({ children, initialOrgs = [], initialUser 
     );
   }
 
+  const isExplorer = pathname?.includes("/explorer");
+
   return (
-    <Flex height='100vh' overflow='hidden' bg='bg.canvas'>
+    <Flex position='fixed' inset={0} width='100vw' height='100vh' overflow='hidden' bg='bg.canvas'>
       {/* Sidebar - Desktop */}
       <Box
         width='260px'
@@ -166,12 +168,20 @@ export function DashboardLayoutClient({ children, initialOrgs = [], initialUser 
         p={5}
         height='100%'
         overflowY='auto'
+        flexShrink={0}
       >
         <DashboardSidebar activeOrgId={activeOrgId} onOrgChange={handleOrgChange} initialOrgs={effectiveOrgs} initialUser={effectiveUser} />
       </Box>
 
       {/* Main Content Area */}
-      <Flex direction='column' flex='1' height='100%' overflowY='auto'>
+      <Flex
+        direction='column'
+        flex='1'
+        height='100%'
+        minH='0'
+        overflow={isExplorer ? "hidden" : "auto"}
+        className={isExplorer ? undefined : "hide-scrollbar"}
+      >
         {/* Mobile Header */}
         <Flex
           display={{ base: "flex", md: "none" }}
@@ -217,7 +227,16 @@ export function DashboardLayoutClient({ children, initialOrgs = [], initialUser 
         </Drawer.Root>
 
         {/* Dynamic Page Target */}
-        <Box p={{ base: 4, md: 8 }} flex='1' bg='bg.canvas'>
+        <Box
+          p={isExplorer ? { base: 4, md: 6 } : { base: 4, md: 8 }}
+          flex='1'
+          height='100%'
+          minH='0'
+          display={isExplorer ? "flex" : "block"}
+          flexDirection={isExplorer ? "column" : undefined}
+          overflow={isExplorer ? "hidden" : undefined}
+          bg='bg.canvas'
+        >
           {children}
         </Box>
       </Flex>

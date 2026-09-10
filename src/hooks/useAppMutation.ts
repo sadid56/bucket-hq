@@ -27,7 +27,7 @@ export function useAppMutation<TData>({ mutationFn, invalidateKeys = [], success
     },
     onError: (error: any) => {
       toaster.create({
-        title: error?.response?.data?.message || errorMessage || "Something went wrong",
+        title: error?.message || error?.response?.data?.message || errorMessage || "Something went wrong",
         type: "error",
       });
     },

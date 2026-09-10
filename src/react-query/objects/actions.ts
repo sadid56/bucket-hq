@@ -3,10 +3,20 @@ import { useAppMutation } from "@/hooks/useAppMutation";
 import { ObjectEndpoints } from "./api";
 import { objectsKeys } from "./keys";
 
-export function useObjects({ connectionId, prefix }: { connectionId: string; prefix: string }) {
+export function useObjects({
+  connectionId,
+  prefix,
+  continuationToken,
+  pageSize,
+}: {
+  connectionId: string;
+  prefix: string;
+  continuationToken?: string;
+  pageSize?: number;
+}) {
   return useQuery({
-    queryKey: objectsKeys.lists(connectionId, prefix),
-    queryFn: () => ObjectEndpoints.getObjects({ connectionId, prefix }),
+    queryKey: objectsKeys.lists(connectionId, prefix, continuationToken, pageSize),
+    queryFn: () => ObjectEndpoints.getObjects({ connectionId, prefix, continuationToken, pageSize }),
     enabled: !!connectionId,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,

@@ -101,6 +101,10 @@ export const signingRouter = {
       const client = getStorageClient(connection);
       const url = await client.generateDownloadUrl(input.key);
 
+      const publicUrl = connection.baseUrl
+        ? `${connection.baseUrl.replace(/\/+$/, "")}/${input.key.replace(/^\/+/, "")}`
+        : null;
+
       const ipAddress =
         context.req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;
 
@@ -118,6 +122,10 @@ export const signingRouter = {
         },
       });
 
-      return { url };
+      return {
+        url: publicUrl || url,
+        publicUrl,
+        presignedUrl: url,
+      };
     }),
 };

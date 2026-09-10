@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { Box, Flex, Text, Button, Stack, Heading, Skeleton, createListCollection, Menu, Badge } from "@chakra-ui/react";
 import { SelectRoot, SelectTrigger, SelectContent, SelectItem, SelectValueText } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Pagination } from "@/components/shared/Pagination";
 import { useConnections } from "@/react-query/connections/actions";
 import { useObjects, useDeleteObject, useGetSigningUrl } from "@/react-query/objects/actions";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { ListView } from "./ListView";
-import { GridView } from "./GridView";
-import { useQueryState } from "nuqs";
+import { useQueryState, parseAsInteger } from "nuqs";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { useCopyLink } from "@/hooks/useCopyLink";
-import { Upload, Folder, LayoutGrid, List } from "lucide-react";
+import { Upload, Folder } from "lucide-react";
 import { toaster } from "@/components/ui/toaster";
 
 import { useParams } from "next/navigation";
@@ -25,10 +25,7 @@ interface FileExplorerProps {
 export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
   const params = useParams();
   const orgId = params?.orgId as string | undefined;
-  const { data: connections = initialConnections, isLoading: loadingConnections } = useConnections(
-    orgId,
-    initialConnections,
-  );
+  const { data: connections = initialConnections, isLoading: loadingConnections } = useConnections(orgId, initialConnections);
   const [connectionId, setConnectionId] = useQueryState("cId");
 
   const activeConnectionId = connectionId || connections[0]?.id || "";
@@ -50,10 +47,7 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
 
   const projectCollection = useMemo(() => {
     return createListCollection<{ label: string; value: string }>({
-      items: [
-        { label: "All Projects", value: "ALL" },
-        ...projects.map((p) => ({ label: p, value: p })),
-      ],
+      items: [{ label: "All Projects", value: "ALL" }, ...projects.map((p) => ({ label: p, value: p }))],
     });
   }, [projects]);
 
@@ -81,19 +75,10 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
   const [previewItem, setPreviewItem] = useState<StorageItem | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
-  React.useEffect(() => {
-    const stored = localStorage.getItem("explorer_view_mode");
-    if (stored === "list" || stored === "grid") {
-      setViewMode(stored);
-    }
-  }, []);
-
-  const handleViewModeChange = useCallback((mode: "list" | "grid") => {
-    setViewMode(mode);
-    localStorage.setItem("explorer_view_mode", mode);
-  }, []);
+  // Pagination state synced with URL via nuqs (shallow: true for instant client-side updates)
+  const [page, setPage] = useQueryState("page", parseAsInteger.withDefault(1).withOptions({ shallow: true }));
+  const [pageSize, setPageSize] = useQueryState("size", parseAsInteger.withDefault(25).withOptions({ shallow: true }));
 
   const {
     data,
@@ -104,87 +89,100 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
     prefix: path,
   });
 
-  const showSkeleton =
-    (loadingConnections && connections.length === 0) ||
-    (Boolean(activeConnectionId) && loading && !data);
+  const showSkeleton = (loadingConnections && connections.length === 0) || (Boolean(activeConnectionId) && loading && !data);
 
   const deleteMutation = useDeleteObject();
   const getSigningMutation = useGetSigningUrl();
 
   const items = data?.items || [];
 
-  const handleConnectionChange = useCallback((id: string) => {
-    setConnectionId(id);
-    setPath("");
-  }, [setConnectionId]);
+  const handleConnectionChange = useCallback(
+    (id: string) => {
+      setConnectionId(id);
+      setPath("");
+      setPage(1);
+    },
+    [setConnectionId, setPage],
+  );
 
-  const navigateToSegment = useCallback((index: number) => {
-    const segmentsList = path.split("/").filter((s) => s !== "");
-    const targetPath = segmentsList.slice(0, index + 1).join("/") + "/";
-    setPath(targetPath);
-  }, [path]);
+  const navigateToSegment = useCallback(
+    (index: number) => {
+      const segmentsList = path.split("/").filter((s) => s !== "");
+      const targetPath = segmentsList.slice(0, index + 1).join("/") + "/";
+      setPath(targetPath);
+      setPage(1);
+    },
+    [path, setPage],
+  );
 
   const navigateToHome = useCallback(() => {
     setPath("");
-  }, []);
+    setPage(1);
+  }, [setPage]);
 
-  const handleDownload = useCallback(async (item: StorageItem) => {
-    try {
-      const res = await getSigningMutation.mutateAsync({
-        action: "download",
-        connectionId: activeConnectionId,
-        key: item.key,
-      });
-
+  const handleDownload = useCallback(
+    async (item: StorageItem) => {
       try {
-        const fileRes = await fetch(res.url);
-        if (!fileRes.ok) throw new Error("Fetch failed");
+        const res = await getSigningMutation.mutateAsync({
+          action: "download",
+          connectionId: activeConnectionId,
+          key: item.key,
+        });
 
-        const blob = await fileRes.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = item.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-      } catch (fetchErr) {
-        window.open(res.url, "_blank");
+        try {
+          const fileRes = await fetch(res.url);
+          if (!fileRes.ok) throw new Error("Fetch failed");
+
+          const blob = await fileRes.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = blobUrl;
+          link.download = item.name;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+        } catch (fetchErr) {
+          window.open(res.url, "_blank");
+        }
+      } catch (err: any) {
+        toaster.create({
+          title: "Download signature failed",
+          description: err.message,
+          type: "error",
+        });
       }
-    } catch (err: any) {
-      toaster.create({
-        title: "Download signature failed",
-        description: err.message,
-        type: "error",
-      });
-    }
-  }, [activeConnectionId, getSigningMutation]);
+    },
+    [activeConnectionId, getSigningMutation],
+  );
 
   const handleCopyLink = useCopyLink(activeConnectionId, getSigningMutation);
 
-  const handlePreview = useCallback(async (item: StorageItem) => {
-    setPreviewItem(item);
-    setPreviewUrl("");
-    setLoadingPreview(true);
-    try {
-      const res = await getSigningMutation.mutateAsync({
-        action: "download",
-        connectionId: activeConnectionId,
-        key: item.key,
-      });
-      setPreviewUrl(res.url);
-    } catch (err: any) {
-      toaster.create({
-        title: "Failed to load preview",
-        description: err.message,
-        type: "error",
-      });
-      setPreviewItem(null);
-    } finally {
-      setLoadingPreview(false);
-    }
-  }, [activeConnectionId, getSigningMutation]);
+  const handlePreview = useCallback(
+    async (item: StorageItem) => {
+      setPreviewItem(item);
+      setPreviewUrl("");
+      setLoadingPreview(true);
+      try {
+        const res = await getSigningMutation.mutateAsync({
+          action: "download",
+          connectionId: activeConnectionId,
+          key: item.key,
+        });
+        setPreviewUrl(res.url);
+      } catch (err: any) {
+        toaster.create({
+          title: "Failed to load preview",
+          description: err.message,
+          type: "error",
+        });
+        setPreviewItem(null);
+      } finally {
+        setLoadingPreview(false);
+      }
+    },
+    [activeConnectionId, getSigningMutation],
+  );
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteItem) return;
@@ -257,36 +255,44 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
     });
   }, [items]);
 
+  const totalItems = sortedItems.length;
+
+  const prevPathRef = useRef(path);
+  const prevConnRef = useRef(activeConnectionId);
+
+  useEffect(() => {
+    if (prevPathRef.current !== path || prevConnRef.current !== activeConnectionId) {
+      prevPathRef.current = path;
+      prevConnRef.current = activeConnectionId;
+      setPage(1);
+    }
+  }, [path, activeConnectionId, setPage]);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return sortedItems.slice(start, start + pageSize);
+  }, [sortedItems, page, pageSize]);
+
   return (
-    <Stack gap={0}>
-      {/* Sticky Header Section */}
-      <Box
-        position="sticky"
-        top="0"
-        zIndex={100}
-        bg="var(--background)"
-        pt={{ base: "16px", md: "32px" }}
-        pb={4}
-        mt={{ base: "-16px", md: "-32px" }}
-        borderBottomWidth="1px"
-        borderColor="border.subtle"
-      >
-        <Flex align={{ base: "stretch", sm: "center" }} justify="space-between" gap={4} direction={{ base: "column", sm: "row" }}>
+    <Flex direction="column" flex="1" height="100%" minH="0" overflow="hidden">
+      {/* Header Section */}
+      <Box pb={4} flexShrink={0}>
+        <Flex align={{ base: "stretch", sm: "center" }} justify='space-between' gap={4} direction={{ base: "column", sm: "row" }}>
           <Stack gap={1}>
-            <Heading size="md" fontWeight="bold">
+            <Heading size='md' fontWeight='bold'>
               Unified File Explorer
             </Heading>
             {/* Breadcrumb Navigator */}
-            <Flex align="center" gap={1} fontSize="xs" fontWeight="medium" py={0.5} flexWrap="wrap">
-              <Button size="xs" variant="ghost" colorPalette="teal" onClick={navigateToHome} px={1} height="auto">
+            <Flex align='center' gap={1} fontSize='xs' fontWeight='medium' py={0.5} flexWrap='wrap'>
+              <Button size='xs' variant='ghost' colorPalette='teal' onClick={navigateToHome} px={1} height='auto'>
                 Root
               </Button>
               {segments.map((segment, index) => (
                 <React.Fragment key={index}>
-                  <Text color="fg.muted" fontSize="10px">
+                  <Text color='fg.muted' fontSize='10px'>
                     /
                   </Text>
-                  <Button size="xs" variant="ghost" colorPalette="teal" onClick={() => navigateToSegment(index)} px={1} height="auto">
+                  <Button size='xs' variant='ghost' colorPalette='teal' onClick={() => navigateToSegment(index)} px={1} height='auto'>
                     {segment}
                   </Button>
                 </React.Fragment>
@@ -295,29 +301,7 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
           </Stack>
 
           {/* Connection Switcher and Actions dropdown */}
-          <Flex align="center" gap={3} justify={{ base: "space-between", sm: "flex-end" }}>
-            {connections.length > 0 && (
-              <Flex borderWidth="1px" borderColor="border.subtle" borderRadius="md" p={0.5} bg="bg.muted" align="center" height="32px">
-                <Button
-                  size="xs"
-                  variant={viewMode === "list" ? "solid" : "ghost"}
-                  onClick={() => handleViewModeChange("list")}
-                  px={2}
-                  height="24px"
-                >
-                  <List size={14} />
-                </Button>
-                <Button
-                  size="xs"
-                  variant={viewMode === "grid" ? "solid" : "ghost"}
-                  onClick={() => handleViewModeChange("grid")}
-                  px={2}
-                  height="24px"
-                >
-                  <LayoutGrid size={14} />
-                </Button>
-              </Flex>
-            )}
+          <Flex align='center' gap={3} justify={{ base: "space-between", sm: "flex-end" }}>
             {projects.length > 1 && (
               <Box minW={{ base: "0", sm: "140px" }}>
                 <SelectRoot
@@ -327,16 +311,14 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
                     if (details.value[0]) {
                       const newProj = details.value[0];
                       setSelectedProject(newProj);
-                      const firstInProj = connections.find(
-                        (c) => newProj === "ALL" || (c.projectName?.trim() || "General") === newProj
-                      );
+                      const firstInProj = connections.find((c) => newProj === "ALL" || (c.projectName?.trim() || "General") === newProj);
                       if (firstInProj) handleConnectionChange(firstInProj.id);
                     }
                   }}
-                  size="sm"
+                  size='sm'
                 >
                   <SelectTrigger>
-                    <SelectValueText placeholder="Project" />
+                    <SelectValueText placeholder='Project' />
                   </SelectTrigger>
                   <SelectContent>
                     {projectCollection.items.map((p: any) => (
@@ -350,16 +332,16 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
             )}
 
             {connections.length > 0 && (
-              <Flex align="center" gap={2} flex={{ base: 1, sm: "initial" }}>
-                <Box minW={{ base: "0", sm: "200px" }} flex="1">
+              <Flex align='center' gap={2} flex={{ base: 1, sm: "initial" }}>
+                <Box minW={{ base: "0", sm: "200px" }} flex='1'>
                   <SelectRoot
                     collection={connCollection}
                     value={[activeConnectionId]}
                     onValueChange={(details) => details.value[0] && handleConnectionChange(details.value[0])}
-                    size="sm"
+                    size='sm'
                   >
                     <SelectTrigger>
-                      <SelectValueText placeholder="Select bucket" />
+                      <SelectValueText placeholder='Select bucket' />
                     </SelectTrigger>
                     <SelectContent>
                       {connCollection.items.map((c: any) => (
@@ -372,23 +354,19 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
                 </Box>
                 {activeConnection && (
                   <Badge
-                    size="xs"
+                    size='xs'
                     colorPalette={
-                      activeConnection.environment === "PRODUCTION"
-                        ? "red"
-                        : activeConnection.environment === "STAGING"
-                        ? "blue"
-                        : "teal"
+                      activeConnection.environment === "PRODUCTION" ? "red" : activeConnection.environment === "STAGING" ? "blue" : "teal"
                     }
-                    variant="surface"
+                    variant='surface'
                     px={2}
                     py={1}
                   >
                     {activeConnection.environment === "PRODUCTION"
                       ? "PROD"
                       : activeConnection.environment === "STAGING"
-                      ? "STAGING"
-                      : "DEV"}
+                        ? "STAGING"
+                        : "DEV"}
                   </Badge>
                 )}
               </Flex>
@@ -397,19 +375,19 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
             {connections.length > 0 && (
               <Menu.Root>
                 <Menu.Trigger asChild>
-                  <Button size="sm" colorPalette="teal" loading={creatingFolder}>
+                  <Button size='sm' colorPalette='teal' loading={creatingFolder}>
                     Actions
                   </Button>
                 </Menu.Trigger>
                 <Menu.Positioner>
                   <Menu.Content style={{ background: "var(--chakra-colors-bg-panel)", zIndex: 1600 }}>
-                    <Menu.Item value="new-folder" onClick={triggerCreateFolder} gap={2}>
+                    <Menu.Item value='new-folder' onClick={triggerCreateFolder} gap={2}>
                       <Folder size={14} />
                       <span>Create Folder</span>
                     </Menu.Item>
-                    <Menu.Item value="upload-files" asChild gap={2}>
+                    <Menu.Item value='upload-files' asChild gap={2}>
                       <label style={{ cursor: "pointer", display: "flex", width: "100%", alignItems: "center" }}>
-                        <input type="file" multiple onChange={handleUpload} style={{ display: "none" }} />
+                        <input type='file' multiple onChange={handleUpload} style={{ display: "none" }} />
                         <Upload size={14} style={{ marginRight: 8 }} />
                         <span>Upload Files</span>
                       </label>
@@ -423,50 +401,77 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
       </Box>
 
       {!loadingConnections && connections.length === 0 ? (
-        <Box p={8} bg="bg.panel" borderRadius="lg" borderWidth="1px" textAlign="center">
-          <Text color="fg.muted" mb={4}>
+        <Box p={8} bg='bg.panel' borderRadius='lg' borderWidth='1px' textAlign='center'>
+          <Text color='fg.muted' mb={4}>
             No storage connections configured for this organization.
           </Text>
-          <Button colorPalette="teal" onClick={() => (window.location.href = orgId ? `/dashboard/${orgId}/connections` : "/dashboard/connections")}>
+          <Button
+            colorPalette='teal'
+            onClick={() => (window.location.href = orgId ? `/dashboard/${orgId}/connections` : "/dashboard/connections")}
+          >
             Add Storage Connection
           </Button>
         </Box>
       ) : (
-        <Box bg="bg.panel" borderWidth="1px" borderRadius="lg" overflowY="auto" maxHeight="calc(100vh - 120px)" mb={4} shadow="sm">
+        <Box
+          bg='bg.panel'
+          borderWidth='1px'
+          borderRadius='lg'
+          shadow='sm'
+          flex='1'
+          display='flex'
+          flexDirection='column'
+          overflow='hidden'
+          minH='0'
+        >
           {showSkeleton ? (
             <Stack gap={4} p={5}>
-              <Skeleton height="24px" width="100%" />
-              <Skeleton height="24px" width="100%" />
-              <Skeleton height="24px" width="100%" />
-              <Skeleton height="24px" width="100%" />
+              <Skeleton height='24px' width='100%' />
+              <Skeleton height='24px' width='100%' />
+              <Skeleton height='24px' width='100%' />
+              <Skeleton height='24px' width='100%' />
             </Stack>
           ) : items.length === 0 ? (
-            <Box py={12} textAlign="center">
-              <Text color="fg.muted">This directory is empty.</Text>
+            <Box py={12} textAlign='center'>
+              <Text color='fg.muted'>This directory is empty.</Text>
             </Box>
-          ) : viewMode === "list" ? (
-            <ListView
-              items={sortedItems}
-              activeConnectionId={activeConnectionId}
-              getSigningMutation={getSigningMutation}
-              setPath={setPath}
-              getFormatSize={getFormatSize}
-              handlePreview={handlePreview}
-              handleDownload={handleDownload}
-              handleCopyLink={handleCopyLink}
-              setDeleteItem={setDeleteItem}
-            />
           ) : (
-            <GridView
-              items={sortedItems}
-              activeConnectionId={activeConnectionId}
-              getSigningMutation={getSigningMutation}
-              setPath={setPath}
-              handlePreview={handlePreview}
-              handleDownload={handleDownload}
-              handleCopyLink={handleCopyLink}
-              setDeleteItem={setDeleteItem}
-            />
+            <>
+              {/* Scrollable File List */}
+              <Box flex='1' overflowY='auto' className='hide-scrollbar' minH='0'>
+                <ListView
+                  items={paginatedItems}
+                  activeConnectionId={activeConnectionId}
+                  getSigningMutation={getSigningMutation}
+                  setPath={(newPath) => {
+                    setPath(newPath);
+                    setPage(1);
+                  }}
+                  getFormatSize={getFormatSize}
+                  handlePreview={handlePreview}
+                  handleDownload={handleDownload}
+                  handleCopyLink={handleCopyLink}
+                  setDeleteItem={setDeleteItem}
+                />
+              </Box>
+              {/* Pinned Pagination Bar */}
+              {totalItems > 0 && (
+                <Box flexShrink={0}>
+                  <Pagination
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={(p) => setPage(p)}
+                    onPageSizeChange={(newSize) => {
+                      setPageSize(newSize);
+                      setPage(1);
+                    }}
+                    px={{ base: 4, md: 6 }}
+                    bg='bg.panel'
+                  />
+                </Box>
+              )}
+            </>
           )}
         </Box>
       )}
@@ -474,32 +479,32 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
       {/* Uploading progress overlays */}
       {uploads.length > 0 && (
         <Box
-          position="fixed"
+          position='fixed'
           bottom={6}
           right={6}
-          bg="bg.panel"
-          borderWidth="1px"
-          borderColor="border.subtle"
+          bg='bg.panel'
+          borderWidth='1px'
+          borderColor='border.subtle'
           p={4}
-          borderRadius="lg"
-          shadow="2xl"
+          borderRadius='lg'
+          shadow='2xl'
           zIndex={1400}
-          width="320px"
+          width='320px'
         >
-          <Text fontWeight="bold" fontSize="sm" mb={3} color="teal.500">
+          <Text fontWeight='bold' fontSize='sm' mb={3} color='teal.500'>
             Uploading Files
           </Text>
           <Stack gap={3}>
             {uploads.map((up) => (
               <Stack key={up.fileName} gap={1}>
-                <Flex justify="space-between" fontSize="xs">
-                  <Text truncate maxW="200px">
+                <Flex justify='space-between' fontSize='xs'>
+                  <Text truncate maxW='200px'>
                     {up.fileName}
                   </Text>
-                  <Text fontWeight="bold">{up.progress}%</Text>
+                  <Text fontWeight='bold'>{up.progress}%</Text>
                 </Flex>
-                <Box h={1.5} bg="bg.muted" borderRadius="full" overflow="hidden">
-                  <Box h="100%" bg="teal.500" w={`${up.progress}%`} transition="width 0.2s" />
+                <Box h={1.5} bg='bg.muted' borderRadius='full' overflow='hidden'>
+                  <Box h='100%' bg='teal.500' w={`${up.progress}%`} transition='width 0.2s' />
                 </Box>
               </Stack>
             ))}
@@ -533,6 +538,6 @@ export function FileExplorer({ initialConnections = [] }: FileExplorerProps) {
           setPreviewUrl("");
         }}
       />
-    </Stack>
+    </Flex>
   );
 }

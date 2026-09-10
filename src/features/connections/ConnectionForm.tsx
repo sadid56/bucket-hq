@@ -14,6 +14,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
   const [label, setLabel] = useState("");
   const [bucketName, setBucketName] = useState("");
   const [region, setRegion] = useState("us-east-1");
+  const [baseUrl, setBaseUrl] = useState("");
   const [projectName, setProjectName] = useState("General");
   const [environment, setEnvironment] = useState<"PRODUCTION" | "STAGING" | "DEVELOPMENT">("PRODUCTION");
 
@@ -56,12 +57,14 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
         credentials,
         bucketName: providerType === "CLOUDINARY" ? null : bucketName,
         region: providerType === "AWS_S3" ? region : null,
+        baseUrl: baseUrl.trim() || undefined,
         projectName: projectName.trim() || "General",
         environment,
       });
 
       setLabel("");
       setBucketName("");
+      setBaseUrl("");
       setProjectName("General");
       setEnvironment("PRODUCTION");
       setAccessKeyId("");
@@ -87,7 +90,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
             size="sm"
             flex="1"
             variant={providerType === "AWS_S3" ? "solid" : "ghost"}
-            colorPalette={providerType === "AWS_S3" ? "orange" : "gray"}
+            colorPalette="teal"
             onClick={() => setProviderType("AWS_S3")}
             gap={1.5}
           >
@@ -98,7 +101,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
             size="sm"
             flex="1"
             variant={providerType === "CLOUDFLARE_R2" ? "solid" : "ghost"}
-            colorPalette={providerType === "CLOUDFLARE_R2" ? "blue" : "gray"}
+            colorPalette="teal"
             onClick={() => setProviderType("CLOUDFLARE_R2")}
             gap={1.5}
           >
@@ -109,7 +112,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
             size="sm"
             flex="1"
             variant={providerType === "CLOUDINARY" ? "solid" : "ghost"}
-            colorPalette={providerType === "CLOUDINARY" ? "purple" : "gray"}
+            colorPalette="teal"
             onClick={() => setProviderType("CLOUDINARY")}
             gap={1.5}
           >
@@ -149,7 +152,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
                   type="button"
                   size="xs"
                   variant={environment === "PRODUCTION" ? "solid" : "outline"}
-                  colorPalette={environment === "PRODUCTION" ? "red" : "gray"}
+                  colorPalette="teal"
                   onClick={() => setEnvironment("PRODUCTION")}
                 >
                   Production
@@ -158,7 +161,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
                   type="button"
                   size="xs"
                   variant={environment === "STAGING" ? "solid" : "outline"}
-                  colorPalette={environment === "STAGING" ? "blue" : "gray"}
+                  colorPalette="teal"
                   onClick={() => setEnvironment("STAGING")}
                 >
                   Staging
@@ -167,7 +170,7 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
                   type="button"
                   size="xs"
                   variant={environment === "DEVELOPMENT" ? "solid" : "outline"}
-                  colorPalette={environment === "DEVELOPMENT" ? "teal" : "gray"}
+                  colorPalette="teal"
                   onClick={() => setEnvironment("DEVELOPMENT")}
                 >
                   Development
@@ -294,6 +297,22 @@ export function ConnectionForm({ onSuccess }: ConnectionFormProps) {
                 </Stack>
               </SimpleGrid>
             )}
+
+            {/* Optional Base URL */}
+            <Stack gap={1.5}>
+              <Flex align="center" gap={2}>
+                <Text fontSize="sm" fontWeight="semibold">Base URL</Text>
+                <Text fontSize="2xs" color="fg.subtle" fontWeight="medium">(Optional)</Text>
+              </Flex>
+              <Input
+                placeholder="e.g. https://cdn.example.com"
+                value={baseUrl}
+                onChange={(e) => setBaseUrl(e.target.value)}
+              />
+              <Text fontSize="2xs" color="fg.subtle">
+                Custom domain or CDN URL for generating public file links.
+              </Text>
+            </Stack>
 
             <Button type="submit" colorPalette="teal" loading={loading} mt={3} width="auto" alignSelf="flex-start">
               Create Connection

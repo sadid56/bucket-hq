@@ -11,6 +11,8 @@ export const objectRouter = {
       z.object({
         connectionId: z.string(),
         prefix: z.string().optional().default(""),
+        continuationToken: z.string().optional(),
+        pageSize: z.number().optional().default(25),
       })
     )
     .handler(async ({ context, input }) => {
@@ -31,7 +33,10 @@ export const objectRouter = {
       }
 
       const client = getStorageClient(connection);
-      const res = await client.listObjects(input.prefix);
+      const res = await client.listObjects(input.prefix, {
+        continuationToken: input.continuationToken,
+        maxKeys: input.pageSize,
+      });
       return res;
     }),
 
